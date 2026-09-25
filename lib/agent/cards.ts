@@ -38,7 +38,7 @@ export type FlightOption = {
 };
 export type MuseumItem = { museumId: string; name: string; style: string; date: number; dateLabel: string; time: string; price: number; reschedule: boolean };
 export type MuseumOption = { id: string; name: string; style: string; price: number; minutesFromAirport: number };
-export type ProductOption = { id: string; name: string; price: number; sustainable: boolean; youPay: number };
+export type ProductOption = { id: string; name: string; price: number; sustainable: boolean; bottle: boolean; youPay: number };
 
 export type Card =
   | { kind: "proposal"; airline: string; flights: FlightOption[]; museums: MuseumItem[]; total: number; limitLeft: number }
@@ -75,6 +75,7 @@ async function productOptions() {
       name: p.name,
       price: p.price,
       sustainable: p.sustainable,
+      bottle: p.bottle,
       youPay: p.sustainable ? Math.max(0, p.price - credit) : p.price,
     })),
   };

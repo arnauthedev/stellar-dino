@@ -205,6 +205,7 @@ export const dinoTools: AiTool[] = [
           sustainable: p.sustainable,
           credit_applies: p.sustainable && credit > 0,
           you_pay_usdc: p.sustainable ? Math.max(0, p.price - credit) : p.price,
+          recyclable_bottle: p.bottle,
         })),
       };
     },

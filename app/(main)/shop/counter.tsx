@@ -96,7 +96,7 @@ export function ShopCounter({ products }: { products: Product[] }) {
                 aria-pressed={p.id === productId}
               >
                 <span className="flex-1 font-medium">{p.name}</span>
-                {p.sustainable ? <span className="badge badge-good">♻ Sustainable</span> : p.bottle ? <span className="badge">Recyclable bottle</span> : null}
+                {p.sustainable ? <span className="badge badge-good">♻ Sustainable · reusable</span> : p.bottle ? <span className="badge">Recyclable bottle</span> : null}
                 <span className="num w-16 text-right">{p.price.toFixed(2)}</span>
               </button>
             </li>

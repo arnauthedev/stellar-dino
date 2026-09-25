@@ -45,7 +45,12 @@ export async function claimRecycleCode(code: string): Promise<ClaimResult> {
     await db.from("recycle_codes").update({ used_at: null }).eq("code", code);
     const message = err instanceof Error ? err.message : String(err);
     if (/No unrecycled bottle/.test(message)) {
-      return { ok: false, reason: "no_bottle", message: "No bottle to recycle. Buy water at the airport shop first." };
+      return {
+        ok: false,
+        reason: "no_bottle",
+        message:
+          "Nothing to recycle: only single-use Water bottles bought at the airport shop can be recycled, one per bottle. Reusable items like the Bamboo bottle are not recycled. Buy a Water bottle first.",
+      };
     }
     return { ok: false, reason: "error", message };
   }

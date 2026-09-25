@@ -79,7 +79,7 @@ export function Chat({
           // Dino's avatar only next to its latest message (and while thinking).
           const lastAssistant = !busy && messages.slice(i + 1).every((x) => x.role !== "assistant");
           return m.role === "user" ? (
-            <div key={i} className="ml-auto w-fit max-w-[80%] rounded-[18px] bg-primary px-4 py-2.5 text-[15px] text-white">
+            <div key={i} className="ml-auto w-fit max-w-[80%] rounded-[18px] bg-[#d6efec] px-4 py-2.5 text-[15px] text-[#1f4744]">
               {m.content}
             </div>
           ) : (

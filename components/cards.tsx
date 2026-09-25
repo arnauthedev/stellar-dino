@@ -255,7 +255,8 @@ function ProductBlock({ p, credit, big }: { p: ProductOption; credit: number; bi
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {p.sustainable ? <span className="badge badge-good">♻ Sustainable</span> : <span className="badge">Full price</span>}
+        {p.sustainable ? <span className="badge badge-good">♻ Sustainable · reusable</span> : <span className="badge">Full price</span>}
+        {p.bottle && <span className="badge">Recyclable bottle</span>}
         {discounted && <span className="badge badge-good">Government pays {usd(p.price - p.youPay)}</span>}
       </div>
       {big && p.sustainable && credit === 0 && <p className="text-xs text-subtle">Recycle a bottle to get 0.50 USDC off sustainable products.</p>}
