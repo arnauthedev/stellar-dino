@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+
 export type CalendarTone = "flight" | "museum" | "shop" | "neutral" | "delayed";
 
 export type CalendarEvent = {
@@ -63,14 +67,24 @@ export function DayCalendar({
   title?: string;
   className?: string;
 }) {
+  const scroller = useRef<HTMLDivElement>(null);
+  const firstStart = events.length ? Math.min(...events.map((e) => toMinutes(e.start))) : null;
   const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
   const px = (minutes: number) => ((minutes - startHour * 60) / 60) * hourHeight;
   const height = (endHour - startHour) * hourHeight;
 
+  // Keep the first event in view (30 min above it).
+  useEffect(() => {
+    if (firstStart !== null && scroller.current) {
+      scroller.current.scrollTo({ top: Math.max(0, px(firstStart - 30)), behavior: "smooth" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstStart, hourHeight]);
+
   return (
     <div className={`flex min-h-0 flex-col ${className ?? ""}`}>
       {title && <div className="label mb-3">{title}</div>}
-      <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+      <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto pr-1">
         <div className="relative grid grid-cols-[44px_1fr]" style={{ height: height + 16 }}>
           {/* hour labels + lines */}
           {hours.map((h) => (

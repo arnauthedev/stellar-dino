@@ -229,3 +229,34 @@ export function Ground({ className }: { className?: string }) {
     </div>
   );
 }
+
+/* ---------- Food (apple, 10 x 10) ---------- */
+
+const APPLE_STEM: Bitmap = [
+  ".....##...",
+  "....##....",
+  "..........",
+];
+const APPLE: Bitmap = [
+  "..........",
+  "..........",
+  "..........",
+  "..##.###..",
+  ".########.",
+  "##########",
+  "##########",
+  "##########",
+  ".########.",
+  "..######..",
+];
+
+export function FoodSprite({ className }: { className?: string }) {
+  return (
+    <span className={`relative inline-block ${className ?? ""}`} aria-hidden="true">
+      <PixelArt bitmap={APPLE} color="var(--color-bad)" className="h-full w-auto" />
+      <span className="absolute inset-0">
+        <PixelArt bitmap={APPLE_STEM} color="var(--color-good)" className="h-[30%] w-auto" />
+      </span>
+    </span>
+  );
+}

@@ -25,7 +25,7 @@ export function Nav() {
           <Link
             key={l.href}
             href={l.href}
-            className="segment flex items-center whitespace-nowrap"
+            className="segment flex items-center px-3! whitespace-nowrap sm:px-[19px]!"
             aria-selected={pathname.startsWith(l.href)}
           >
             {l.label}
