@@ -12,13 +12,13 @@ const STATUS_BADGE: Record<Flight["status"], string> = {
   Delayed: "badge badge-bad",
 };
 
-export function ControlPanel({ flights, bookedFlight }: { flights: Flight[]; bookedFlight?: string }) {
-  const [flightId, setFlightId] = useState(bookedFlight ?? flights[0]?.id ?? "");
+export function ControlPanel({ flights }: { flights: Flight[] }) {
   const [delay, setDelay] = useState(120);
   const [busy, setBusy] = useState<string | null>(null);
   const [log, setLog] = useState<LogEntry[]>([]);
   const [, startTransition] = useTransition();
-  const flight = flights.find((f) => f.id === flightId);
+  // The user's next flight that has not been reported yet (else their last one).
+  const flight = flights.find((f) => f.status === "Scheduled") ?? flights[flights.length - 1];
 
   const act = (label: string, fn: () => Promise<ActionResult>) => {
     setBusy(label);
@@ -32,48 +32,39 @@ export function ControlPanel({ flights, bookedFlight }: { flights: Flight[]; boo
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
       <section className="panel space-y-4 p-5">
-        <div className="label">Flight oracle</div>
-        <div className="space-y-2">
-          {flights.map((f) => (
-            <label
-              key={f.id}
-              className={`flex cursor-pointer items-center gap-3 rounded-ctl px-3 py-2.5 ${f.id === flightId ? "bg-accent-soft" : "bg-field"}`}
-            >
-              <input type="radio" name="flight" checked={f.id === flightId} onChange={() => setFlightId(f.id)} />
-              <span className="num font-medium">{f.code}</span>
+        <div className="label">Flight oracle · user&apos;s booked flight</div>
+        {!flight ? (
+          <p className="text-sm text-subtle">The user has no booked flight yet. Ask Dino to book one.</p>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 rounded-ctl bg-accent-soft px-4 py-3">
+              <span className="num font-medium">{flight.code}</span>
               <span className="text-sm text-subtle">
-                {f.from} → {f.to} · {f.depart}–{f.arrive}
+                {flight.from} → {flight.to} · {String(flight.date).slice(6, 8)}/{String(flight.date).slice(4, 6)} · {flight.depart}–{flight.arrive}
               </span>
-              {f.id === bookedFlight && <span className="badge">booked</span>}
-              <span className={`ml-auto ${STATUS_BADGE[f.status]}`}>{f.status === "OnTime" ? "On time" : f.status}</span>
-            </label>
-          ))}
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="segments" role="tablist" aria-label="Delay">
-            {[60, 120, 180].map((m) => (
-              <button key={m} className="segment" role="tab" aria-selected={delay === m} onClick={() => setDelay(m)}>
-                +{m / 60} h
+              <span className={`ml-auto ${STATUS_BADGE[flight.status]}`}>{flight.status === "OnTime" ? "On time" : flight.status}</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="segments" role="tablist" aria-label="Delay">
+                {[60, 120, 180].map((m) => (
+                  <button key={m} className="segment" role="tab" aria-selected={delay === m} onClick={() => setDelay(m)}>
+                    +{m / 60} h
+                  </button>
+                ))}
+              </div>
+              <button
+                className="btn btn-primary"
+                disabled={!!busy || flight.status !== "Scheduled"}
+                onClick={() => act("delay", () => delayFlightAction(flight.id, delay))}
+              >
+                {busy === "delay" ? "Reporting…" : `Delay flight +${delay / 60} h`}
               </button>
-            ))}
-          </div>
-          <button
-            className="btn btn-primary"
-            disabled={!!busy || flight?.status !== "Scheduled"}
-            onClick={() => act("delay", () => delayFlightAction(flightId, delay))}
-          >
-            {busy === "delay" ? "Reporting…" : `Delay flight +${delay / 60} h`}
-          </button>
-          <button
-            className="btn"
-            disabled={!!busy || flight?.status !== "Scheduled"}
-            onClick={() => act("ontime", () => onTimeAction(flightId))}
-          >
-            {busy === "ontime" ? "Reporting…" : "Landed on time"}
-          </button>
-        </div>
-        {flight && flight.status !== "Scheduled" && (
-          <p className="text-sm text-subtle">This flight is already reported. Reset the demo to run it again.</p>
+              <button className="btn" disabled={!!busy || flight.status !== "Scheduled"} onClick={() => act("ontime", () => onTimeAction(flight.id))}>
+                {busy === "ontime" ? "Reporting…" : "Landed on time"}
+              </button>
+            </div>
+            {flight.status !== "Scheduled" && <p className="text-sm text-subtle">This flight is already reported. Reset the demo to run it again.</p>}
+          </>
         )}
       </section>
 

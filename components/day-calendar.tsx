@@ -6,6 +6,8 @@ export type CalendarTone = "flight" | "museum" | "shop" | "neutral" | "delayed";
 
 export type CalendarEvent = {
   id: string;
+  /** yyyymmdd; events without a date are shown on every day view. */
+  date?: number;
   title: string;
   start: string; // "HH:MM"
   end: string; // "HH:MM"
@@ -54,10 +56,11 @@ function layout(events: CalendarEvent[]) {
 
 export function DayCalendar({
   events,
-  startHour = 8,
+  startHour = 6,
   endHour = 24,
   hourHeight = 40,
   title,
+  header,
   className,
 }: {
   events: CalendarEvent[];
@@ -65,6 +68,8 @@ export function DayCalendar({
   endHour?: number;
   hourHeight?: number;
   title?: string;
+  /** Replaces the title row (e.g. day navigation). */
+  header?: React.ReactNode;
   className?: string;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
@@ -83,7 +88,7 @@ export function DayCalendar({
 
   return (
     <div className={`flex min-h-0 flex-col ${className ?? ""}`}>
-      {title && <div className="label mb-3">{title}</div>}
+      {header ?? (title && <div className="label mb-3">{title}</div>)}
       <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto pr-1">
         <div className="relative grid grid-cols-[44px_1fr]" style={{ height: height + 16 }}>
           {/* hour labels + lines */}
@@ -127,15 +132,18 @@ export function DayCalendar({
   );
 }
 
-/** Monday-Sunday view; the demo's events are all today, drawn in today's column. */
+/** Seven days from today (the booking window); each event is drawn on its date. */
 export function WeekCalendar({
   events,
-  startHour = 8,
+  today,
+  startHour = 6,
   endHour = 24,
   hourHeight = 40,
   className,
 }: {
   events: CalendarEvent[];
+  /** yyyymmdd of today (Lisbon), from the server. */
+  today: number;
   startHour?: number;
   endHour?: number;
   hourHeight?: number;
@@ -147,16 +155,12 @@ export function WeekCalendar({
   const height = (endHour - startHour) * hourHeight;
   const firstStart = events.length ? Math.min(...events.map((e) => toMinutes(e.start))) : null;
 
-  // Week of today (Lisbon), Monday first.
-  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Lisbon" }));
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    return d;
-  });
-  const todayIndex = (now.getDay() + 6) % 7;
+  // Rolling week: today + 6 days = the whole booking window (dates in UTC from yyyymmdd).
+  const t = String(today);
+  const now = new Date(Date.UTC(Number(t.slice(0, 4)), Number(t.slice(4, 6)) - 1, Number(t.slice(6, 8))));
+  const todayIndex = 0;
+  const days = Array.from({ length: 7 }, (_, i) => new Date(now.getTime() + (i - todayIndex) * 86_400_000));
+  const num = (d: Date) => d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
 
   useEffect(() => {
     if (firstStart !== null && scroller.current) {
@@ -172,14 +176,14 @@ export function WeekCalendar({
         {days.map((d, i) => (
           <div key={i} className="text-center">
             <div className={`label text-[11px]! ${i === todayIndex ? "text-accent-ink!" : ""}`}>
-              {d.toLocaleDateString("en-GB", { weekday: "short" })}
+              {d.toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" })}
             </div>
             <div
               className={`num mx-auto mt-0.5 flex size-7 items-center justify-center rounded-full text-sm ${
                 i === todayIndex ? "bg-accent text-white" : "text-subtle"
               }`}
             >
-              {d.getDate()}
+              {d.getUTCDate()}
             </div>
           </div>
         ))}
@@ -194,14 +198,13 @@ export function WeekCalendar({
               <div className="absolute right-0 left-[44px] h-px bg-line" style={{ top: px(h * 60) + 8 }} />
             </div>
           ))}
-          {days.map((_, i) => (
+          {days.map((day, i) => (
             <div
               key={i}
               className={`absolute top-2 bottom-2 border-l border-line ${i === todayIndex ? "bg-accent-soft/40" : ""}`}
               style={{ left: `calc(44px + ${i} * (100% - 44px) / 7)`, width: "calc((100% - 44px) / 7)" }}
             >
-              {i === todayIndex &&
-                layout(events).map(({ event, col, cols }) => {
+              {layout(events.filter((e) => (e.date ?? today) === num(day))).map(({ event, col, cols }) => {
                   const top = px(toMinutes(event.start));
                   const h = Math.max(22, px(toMinutes(event.end)) - top - 2);
                   return (

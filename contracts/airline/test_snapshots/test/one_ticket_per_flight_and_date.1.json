@@ -217,10 +217,143 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
                 },
                 {
-                  "symbol": "SK202"
+                  "symbol": "SK101"
                 },
                 {
                   "u32": 20260926
+                }
+              ]
+            }
+          },
+          "sub_invocations": [
+            {
+              "function": {
+                "contract_fn": {
+                  "contract_address": "CBEPDNVYXQGWB5YUBXKJWYJA7OXTZW5LFLNO5JRRGE6Z6C5OSUZPCCEL",
+                  "function_name": "transfer",
+                  "args": [
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                    },
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                    },
+                    {
+                      "i128": "712000000"
+                    }
+                  ]
+                }
+              },
+              "sub_invocations": []
+            },
+            {
+              "function": {
+                "contract_fn": {
+                  "contract_address": "CBEPDNVYXQGWB5YUBXKJWYJA7OXTZW5LFLNO5JRRGE6Z6C5OSUZPCCEL",
+                  "function_name": "transfer",
+                  "args": [
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                    },
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                    },
+                    {
+                      "i128": "178000000"
+                    }
+                  ]
+                }
+              },
+              "sub_invocations": []
+            }
+          ]
+        }
+      ]
+    ],
+    [],
+    [
+      [
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM",
+        {
+          "function": {
+            "contract_fn": {
+              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
+              "function_name": "buy_ticket",
+              "args": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                },
+                {
+                  "symbol": "SK101"
+                },
+                {
+                  "u32": 20260927
+                }
+              ]
+            }
+          },
+          "sub_invocations": [
+            {
+              "function": {
+                "contract_fn": {
+                  "contract_address": "CBEPDNVYXQGWB5YUBXKJWYJA7OXTZW5LFLNO5JRRGE6Z6C5OSUZPCCEL",
+                  "function_name": "transfer",
+                  "args": [
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                    },
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                    },
+                    {
+                      "i128": "712000000"
+                    }
+                  ]
+                }
+              },
+              "sub_invocations": []
+            },
+            {
+              "function": {
+                "contract_fn": {
+                  "contract_address": "CBEPDNVYXQGWB5YUBXKJWYJA7OXTZW5LFLNO5JRRGE6Z6C5OSUZPCCEL",
+                  "function_name": "transfer",
+                  "args": [
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                    },
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                    },
+                    {
+                      "i128": "178000000"
+                    }
+                  ]
+                }
+              },
+              "sub_invocations": []
+            }
+          ]
+        }
+      ]
+    ],
+    [
+      [
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM",
+        {
+          "function": {
+            "contract_fn": {
+              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
+              "function_name": "buy_ticket",
+              "args": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                },
+                {
+                  "symbol": "SK202"
+                },
+                {
+                  "u32": 20260927
                 }
               ]
             }
@@ -270,39 +403,6 @@
         }
       ]
     ],
-    [],
-    [
-      [
-        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
-        {
-          "function": {
-            "contract_fn": {
-              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
-              "function_name": "report_status",
-              "args": [
-                {
-                  "symbol": "SK202"
-                },
-                {
-                  "u32": 20260926
-                },
-                {
-                  "bool": true
-                },
-                {
-                  "u32": 120
-                }
-              ]
-            }
-          },
-          "sub_invocations": []
-        }
-      ]
-    ],
-    [],
-    [],
-    [],
-    [],
     [],
     []
   ],
@@ -403,10 +503,10 @@
           "data": {
             "contract_data": {
               "ext": "v0",
-              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM",
               "key": {
                 "ledger_key_nonce": {
-                  "nonce": "2032731177588607455"
+                  "nonce": "4270020994084947596"
                 }
               },
               "durability": "temporary",
@@ -443,14 +543,34 @@
           "data": {
             "contract_data": {
               "ext": "v0",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM",
+              "key": {
+                "ledger_key_nonce": {
+                  "nonce": "8370022561469687789"
+                }
+              },
+              "durability": "temporary",
+              "val": "void"
+            }
+          },
+          "ext": "v0"
+        },
+        "live_until": 6311999
+      },
+      {
+        "entry": {
+          "last_modified_ledger_seq": 0,
+          "data": {
+            "contract_data": {
+              "ext": "v0",
               "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
               "key": {
                 "vec": [
                   {
-                    "symbol": "State"
+                    "symbol": "Tickets"
                   },
                   {
-                    "symbol": "SK202"
+                    "symbol": "SK101"
                   },
                   {
                     "u32": 20260926
@@ -459,26 +579,141 @@
               },
               "durability": "persistent",
               "val": {
-                "map": [
+                "vec": [
                   {
-                    "key": {
-                      "symbol": "delay_minutes"
-                    },
-                    "val": {
-                      "u32": 120
-                    }
+                    "map": [
+                      {
+                        "key": {
+                          "symbol": "code"
+                        },
+                        "val": {
+                          "symbol": "SK101"
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "date"
+                        },
+                        "val": {
+                          "u32": 20260926
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "held"
+                        },
+                        "val": {
+                          "i128": "178000000"
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "price"
+                        },
+                        "val": {
+                          "i128": "890000000"
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "settled"
+                        },
+                        "val": {
+                          "bool": false
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "user"
+                        },
+                        "val": {
+                          "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "ext": "v0"
+        },
+        "live_until": 1036800
+      },
+      {
+        "entry": {
+          "last_modified_ledger_seq": 0,
+          "data": {
+            "contract_data": {
+              "ext": "v0",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
+              "key": {
+                "vec": [
+                  {
+                    "symbol": "Tickets"
                   },
                   {
-                    "key": {
-                      "symbol": "status"
-                    },
-                    "val": {
-                      "vec": [
-                        {
-                          "symbol": "Delayed"
+                    "symbol": "SK101"
+                  },
+                  {
+                    "u32": 20260927
+                  }
+                ]
+              },
+              "durability": "persistent",
+              "val": {
+                "vec": [
+                  {
+                    "map": [
+                      {
+                        "key": {
+                          "symbol": "code"
+                        },
+                        "val": {
+                          "symbol": "SK101"
                         }
-                      ]
-                    }
+                      },
+                      {
+                        "key": {
+                          "symbol": "date"
+                        },
+                        "val": {
+                          "u32": 20260927
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "held"
+                        },
+                        "val": {
+                          "i128": "178000000"
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "price"
+                        },
+                        "val": {
+                          "i128": "890000000"
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "settled"
+                        },
+                        "val": {
+                          "bool": false
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "user"
+                        },
+                        "val": {
+                          "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                        }
+                      }
+                    ]
                   }
                 ]
               }
@@ -504,7 +739,7 @@
                     "symbol": "SK202"
                   },
                   {
-                    "u32": 20260926
+                    "u32": 20260927
                   }
                 ]
               },
@@ -526,7 +761,7 @@
                           "symbol": "date"
                         },
                         "val": {
-                          "u32": 20260926
+                          "u32": 20260927
                         }
                       },
                       {
@@ -550,7 +785,7 @@
                           "symbol": "settled"
                         },
                         "val": {
-                          "bool": true
+                          "bool": false
                         }
                       },
                       {
@@ -598,7 +833,7 @@
                           "symbol": "code"
                         },
                         "val": {
-                          "symbol": "SK202"
+                          "symbol": "SK101"
                         }
                       },
                       {
@@ -607,6 +842,46 @@
                         },
                         "val": {
                           "u32": 20260926
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "map": [
+                      {
+                        "key": {
+                          "symbol": "code"
+                        },
+                        "val": {
+                          "symbol": "SK101"
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "date"
+                        },
+                        "val": {
+                          "u32": 20260927
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "map": [
+                      {
+                        "key": {
+                          "symbol": "code"
+                        },
+                        "val": {
+                          "symbol": "SK202"
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "date"
+                        },
+                        "val": {
+                          "u32": 20260927
                         }
                       }
                     ]
@@ -702,7 +977,7 @@
                               "symbol": "refunded"
                             },
                             "val": {
-                              "i128": "240000000"
+                              "i128": "0"
                             }
                           },
                           {
@@ -710,7 +985,7 @@
                               "symbol": "refunds_paid"
                             },
                             "val": {
-                              "u32": 1
+                              "u32": 0
                             }
                           },
                           {
@@ -718,7 +993,7 @@
                               "symbol": "revenue"
                             },
                             "val": {
-                              "i128": "1200000000"
+                              "i128": "2980000000"
                             }
                           },
                           {
@@ -726,7 +1001,7 @@
                               "symbol": "tickets_sold"
                             },
                             "val": {
-                              "u32": 1
+                              "u32": 3
                             }
                           }
                         ]
@@ -915,7 +1190,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "960000000"
+                      "i128": "2384000000"
                     }
                   },
                   {
@@ -967,7 +1242,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "4040000000"
+                      "i128": "2020000000"
                     }
                   },
                   {
@@ -1019,7 +1294,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "0"
+                      "i128": "596000000"
                     }
                   },
                   {

@@ -55,28 +55,147 @@
           "function": {
             "contract_fn": {
               "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
-              "function_name": "add_flight",
+              "function_name": "set_timetable",
               "args": [
                 {
-                  "symbol": "TP432"
-                },
-                {
-                  "string": "TP432"
-                },
-                {
-                  "string": "LIS"
-                },
-                {
-                  "string": "CDG"
-                },
-                {
-                  "u32": 600
-                },
-                {
-                  "u32": 755
-                },
-                {
-                  "i128": "1200000000"
+                  "vec": [
+                    {
+                      "map": [
+                        {
+                          "key": {
+                            "symbol": "arrive"
+                          },
+                          "val": {
+                            "u32": 545
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "code"
+                          },
+                          "val": {
+                            "symbol": "SK101"
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "depart"
+                          },
+                          "val": {
+                            "u32": 480
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "from"
+                          },
+                          "val": {
+                            "string": "BCN"
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "from_city"
+                          },
+                          "val": {
+                            "string": "Barcelona"
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "price"
+                          },
+                          "val": {
+                            "i128": "890000000"
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "to"
+                          },
+                          "val": {
+                            "string": "LIS"
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "to_city"
+                          },
+                          "val": {
+                            "string": "Lisbon"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "map": [
+                        {
+                          "key": {
+                            "symbol": "arrive"
+                          },
+                          "val": {
+                            "u32": 815
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "code"
+                          },
+                          "val": {
+                            "symbol": "SK202"
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "depart"
+                          },
+                          "val": {
+                            "u32": 600
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "from"
+                          },
+                          "val": {
+                            "string": "LIS"
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "from_city"
+                          },
+                          "val": {
+                            "string": "Lisbon"
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "price"
+                          },
+                          "val": {
+                            "i128": "1200000000"
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "to"
+                          },
+                          "val": {
+                            "string": "CDG"
+                          }
+                        },
+                        {
+                          "key": {
+                            "symbol": "to_city"
+                          },
+                          "val": {
+                            "string": "Paris"
+                          }
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }
@@ -98,7 +217,10 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
                 },
                 {
-                  "symbol": "TP432"
+                  "symbol": "SK101"
+                },
+                {
+                  "u32": 20260926
                 }
               ]
             }
@@ -117,7 +239,7 @@
                       "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
                     },
                     {
-                      "i128": "960000000"
+                      "i128": "712000000"
                     }
                   ]
                 }
@@ -137,7 +259,7 @@
                       "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
                     },
                     {
-                      "i128": "240000000"
+                      "i128": "178000000"
                     }
                   ]
                 }
@@ -148,7 +270,122 @@
         }
       ]
     ],
-    []
+    [
+      [
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+        {
+          "function": {
+            "contract_fn": {
+              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
+              "function_name": "report_status",
+              "args": [
+                {
+                  "symbol": "SK101"
+                },
+                {
+                  "u32": 20260926
+                },
+                {
+                  "bool": true
+                },
+                {
+                  "u32": 90
+                }
+              ]
+            }
+          },
+          "sub_invocations": []
+        }
+      ]
+    ],
+    [
+      [
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
+        {
+          "function": {
+            "contract_fn": {
+              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
+              "function_name": "reset_user",
+              "args": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                }
+              ]
+            }
+          },
+          "sub_invocations": []
+        }
+      ]
+    ],
+    [],
+    [],
+    [],
+    [
+      [
+        "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM",
+        {
+          "function": {
+            "contract_fn": {
+              "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
+              "function_name": "buy_ticket",
+              "args": [
+                {
+                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                },
+                {
+                  "symbol": "SK101"
+                },
+                {
+                  "u32": 20260926
+                }
+              ]
+            }
+          },
+          "sub_invocations": [
+            {
+              "function": {
+                "contract_fn": {
+                  "contract_address": "CBEPDNVYXQGWB5YUBXKJWYJA7OXTZW5LFLNO5JRRGE6Z6C5OSUZPCCEL",
+                  "function_name": "transfer",
+                  "args": [
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                    },
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+                    },
+                    {
+                      "i128": "712000000"
+                    }
+                  ]
+                }
+              },
+              "sub_invocations": []
+            },
+            {
+              "function": {
+                "contract_fn": {
+                  "contract_address": "CBEPDNVYXQGWB5YUBXKJWYJA7OXTZW5LFLNO5JRRGE6Z6C5OSUZPCCEL",
+                  "function_name": "transfer",
+                  "args": [
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                    },
+                    {
+                      "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+                    },
+                    {
+                      "i128": "178000000"
+                    }
+                  ]
+                }
+              },
+              "sub_invocations": []
+            }
+          ]
+        }
+      ]
+    ]
   ],
   "ledger": {
     "protocol_version": 26,
@@ -247,6 +484,46 @@
           "data": {
             "contract_data": {
               "ext": "v0",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M",
+              "key": {
+                "ledger_key_nonce": {
+                  "nonce": "4270020994084947596"
+                }
+              },
+              "durability": "temporary",
+              "val": "void"
+            }
+          },
+          "ext": "v0"
+        },
+        "live_until": 6311999
+      },
+      {
+        "entry": {
+          "last_modified_ledger_seq": 0,
+          "data": {
+            "contract_data": {
+              "ext": "v0",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAITA4",
+              "key": {
+                "ledger_key_nonce": {
+                  "nonce": "2032731177588607455"
+                }
+              },
+              "durability": "temporary",
+              "val": "void"
+            }
+          },
+          "ext": "v0"
+        },
+        "live_until": 6311999
+      },
+      {
+        "entry": {
+          "last_modified_ledger_seq": 0,
+          "data": {
+            "contract_data": {
+              "ext": "v0",
               "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM",
               "key": {
                 "ledger_key_nonce": {
@@ -267,95 +544,94 @@
           "data": {
             "contract_data": {
               "ext": "v0",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM",
+              "key": {
+                "ledger_key_nonce": {
+                  "nonce": "8370022561469687789"
+                }
+              },
+              "durability": "temporary",
+              "val": "void"
+            }
+          },
+          "ext": "v0"
+        },
+        "live_until": 6311999
+      },
+      {
+        "entry": {
+          "last_modified_ledger_seq": 0,
+          "data": {
+            "contract_data": {
+              "ext": "v0",
               "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
               "key": {
                 "vec": [
                   {
-                    "symbol": "Flight"
+                    "symbol": "Tickets"
                   },
                   {
-                    "symbol": "TP432"
+                    "symbol": "SK101"
+                  },
+                  {
+                    "u32": 20260926
                   }
                 ]
               },
               "durability": "persistent",
               "val": {
-                "map": [
+                "vec": [
                   {
-                    "key": {
-                      "symbol": "arrive"
-                    },
-                    "val": {
-                      "u32": 755
-                    }
-                  },
-                  {
-                    "key": {
-                      "symbol": "code"
-                    },
-                    "val": {
-                      "string": "TP432"
-                    }
-                  },
-                  {
-                    "key": {
-                      "symbol": "delay_minutes"
-                    },
-                    "val": {
-                      "u32": 0
-                    }
-                  },
-                  {
-                    "key": {
-                      "symbol": "depart"
-                    },
-                    "val": {
-                      "u32": 600
-                    }
-                  },
-                  {
-                    "key": {
-                      "symbol": "from"
-                    },
-                    "val": {
-                      "string": "LIS"
-                    }
-                  },
-                  {
-                    "key": {
-                      "symbol": "id"
-                    },
-                    "val": {
-                      "symbol": "TP432"
-                    }
-                  },
-                  {
-                    "key": {
-                      "symbol": "price"
-                    },
-                    "val": {
-                      "i128": "1200000000"
-                    }
-                  },
-                  {
-                    "key": {
-                      "symbol": "status"
-                    },
-                    "val": {
-                      "vec": [
-                        {
-                          "symbol": "Scheduled"
+                    "map": [
+                      {
+                        "key": {
+                          "symbol": "code"
+                        },
+                        "val": {
+                          "symbol": "SK101"
                         }
-                      ]
-                    }
-                  },
-                  {
-                    "key": {
-                      "symbol": "to"
-                    },
-                    "val": {
-                      "string": "CDG"
-                    }
+                      },
+                      {
+                        "key": {
+                          "symbol": "date"
+                        },
+                        "val": {
+                          "u32": 20260926
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "held"
+                        },
+                        "val": {
+                          "i128": "178000000"
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "price"
+                        },
+                        "val": {
+                          "i128": "890000000"
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "settled"
+                        },
+                        "val": {
+                          "bool": false
+                        }
+                      },
+                      {
+                        "key": {
+                          "symbol": "user"
+                        },
+                        "val": {
+                          "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                        }
+                      }
+                    ]
                   }
                 ]
               }
@@ -375,10 +651,10 @@
               "key": {
                 "vec": [
                   {
-                    "symbol": "Tickets"
+                    "symbol": "UserFlights"
                   },
                   {
-                    "symbol": "TP432"
+                    "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
                   }
                 ]
               },
@@ -389,42 +665,18 @@
                     "map": [
                       {
                         "key": {
-                          "symbol": "flight"
+                          "symbol": "code"
                         },
                         "val": {
-                          "symbol": "TP432"
+                          "symbol": "SK101"
                         }
                       },
                       {
                         "key": {
-                          "symbol": "held"
+                          "symbol": "date"
                         },
                         "val": {
-                          "i128": "240000000"
-                        }
-                      },
-                      {
-                        "key": {
-                          "symbol": "price"
-                        },
-                        "val": {
-                          "i128": "1200000000"
-                        }
-                      },
-                      {
-                        "key": {
-                          "symbol": "settled"
-                        },
-                        "val": {
-                          "bool": false
-                        }
-                      },
-                      {
-                        "key": {
-                          "symbol": "user"
-                        },
-                        "val": {
-                          "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+                          "u32": 20260926
                         }
                       }
                     ]
@@ -501,22 +753,6 @@
                       "key": {
                         "vec": [
                           {
-                            "symbol": "FlightIds"
-                          }
-                        ]
-                      },
-                      "val": {
-                        "vec": [
-                          {
-                            "symbol": "TP432"
-                          }
-                        ]
-                      }
-                    },
-                    {
-                      "key": {
-                        "vec": [
-                          {
                             "symbol": "Stats"
                           }
                         ]
@@ -536,7 +772,7 @@
                               "symbol": "refunded"
                             },
                             "val": {
-                              "i128": "0"
+                              "i128": "178000000"
                             }
                           },
                           {
@@ -544,7 +780,7 @@
                               "symbol": "refunds_paid"
                             },
                             "val": {
-                              "u32": 0
+                              "u32": 1
                             }
                           },
                           {
@@ -552,7 +788,7 @@
                               "symbol": "revenue"
                             },
                             "val": {
-                              "i128": "1200000000"
+                              "i128": "1780000000"
                             }
                           },
                           {
@@ -560,8 +796,157 @@
                               "symbol": "tickets_sold"
                             },
                             "val": {
-                              "u32": 1
+                              "u32": 2
                             }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "key": {
+                        "vec": [
+                          {
+                            "symbol": "Timetable"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "vec": [
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "arrive"
+                                },
+                                "val": {
+                                  "u32": 545
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "code"
+                                },
+                                "val": {
+                                  "symbol": "SK101"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "depart"
+                                },
+                                "val": {
+                                  "u32": 480
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "from"
+                                },
+                                "val": {
+                                  "string": "BCN"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "from_city"
+                                },
+                                "val": {
+                                  "string": "Barcelona"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "price"
+                                },
+                                "val": {
+                                  "i128": "890000000"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "to"
+                                },
+                                "val": {
+                                  "string": "LIS"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "to_city"
+                                },
+                                "val": {
+                                  "string": "Lisbon"
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "map": [
+                              {
+                                "key": {
+                                  "symbol": "arrive"
+                                },
+                                "val": {
+                                  "u32": 815
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "code"
+                                },
+                                "val": {
+                                  "symbol": "SK202"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "depart"
+                                },
+                                "val": {
+                                  "u32": 600
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "from"
+                                },
+                                "val": {
+                                  "string": "LIS"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "from_city"
+                                },
+                                "val": {
+                                  "string": "Lisbon"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "price"
+                                },
+                                "val": {
+                                  "i128": "1200000000"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "to"
+                                },
+                                "val": {
+                                  "string": "CDG"
+                                }
+                              },
+                              {
+                                "key": {
+                                  "symbol": "to_city"
+                                },
+                                "val": {
+                                  "string": "Paris"
+                                }
+                              }
+                            ]
                           }
                         ]
                       }
@@ -600,7 +985,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "960000000"
+                      "i128": "1424000000"
                     }
                   },
                   {
@@ -652,7 +1037,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "3800000000"
+                      "i128": "3398000000"
                     }
                   },
                   {
@@ -704,7 +1089,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "240000000"
+                      "i128": "178000000"
                     }
                   },
                   {
@@ -850,5 +1235,131 @@
       }
     ]
   },
-  "events": []
+  "events": [
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CBEPDNVYXQGWB5YUBXKJWYJA7OXTZW5LFLNO5JRRGE6Z6C5OSUZPCCEL",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "transfer"
+              },
+              {
+                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+              },
+              {
+                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHK3M"
+              },
+              {
+                "string": "aaa:GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEGWF"
+              }
+            ],
+            "data": {
+              "i128": "712000000"
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CBEPDNVYXQGWB5YUBXKJWYJA7OXTZW5LFLNO5JRRGE6Z6C5OSUZPCCEL",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "transfer"
+              },
+              {
+                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+              },
+              {
+                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4"
+              },
+              {
+                "string": "aaa:GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEGWF"
+              }
+            ],
+            "data": {
+              "i128": "178000000"
+            }
+          }
+        }
+      },
+      "failed_call": false
+    },
+    {
+      "event": {
+        "ext": "v0",
+        "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDR4",
+        "type_": "contract",
+        "body": {
+          "v0": {
+            "topics": [
+              {
+                "symbol": "ticket_sold"
+              },
+              {
+                "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
+              },
+              {
+                "symbol": "SK101"
+              }
+            ],
+            "data": {
+              "map": [
+                {
+                  "key": {
+                    "symbol": "date"
+                  },
+                  "val": {
+                    "u32": 20260926
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "held"
+                  },
+                  "val": {
+                    "i128": "178000000"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "note"
+                  },
+                  "val": {
+                    "string": "Ticket SK101 BCN-LIS 26/09: 89.00 USDC. 71.20 to airline, 17.80 held until landing"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "paid_to_airline"
+                  },
+                  "val": {
+                    "i128": "712000000"
+                  }
+                },
+                {
+                  "key": {
+                    "symbol": "price"
+                  },
+                  "val": {
+                    "i128": "890000000"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "failed_call": false
+    }
+  ]
 }

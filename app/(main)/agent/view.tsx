@@ -28,16 +28,32 @@ export function AgentView({ initial, wallet }: { initial: AgentState; wallet: st
 }
 
 function describe(card: Card): string {
-  switch (card.kind) {
-    case "trip":
-      return `${card.airline} ${card.flight.code} ${card.flight.from}-${card.flight.to} at ${card.flight.depart}${card.museum ? ` + museum at ${card.museum.time}` : ""}`;
-    case "museum":
-      return `museum at ${card.time}`;
-    case "product":
-      return card.product.name;
-    default:
-      return card.kind;
+  if (card.kind === "proposal") {
+    return [
+      ...card.flights.map((f) => `flight ${f.code} ${f.from}-${f.to} on ${f.dateLabel} at ${f.depart}`),
+      ...card.museums.map((m) => `${m.name} on ${m.dateLabel} at ${m.time}`),
+    ].join(" + ");
   }
+  if (card.kind === "product") return card.product.name;
+  return card.kind;
+}
+
+function shiftDate(n: number, days: number): number {
+  const s = String(n);
+  const d = new Date(Date.UTC(Number(s.slice(0, 4)), Number(s.slice(4, 6)) - 1, Number(s.slice(6, 8))) + days * 86_400_000);
+  return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+}
+
+function dayLabel(n: number, today: number): string {
+  if (n === today) return "Today";
+  if (n === shiftDate(today, 1)) return "Tomorrow";
+  const s = String(n);
+  return new Date(Date.UTC(Number(s.slice(0, 4)), Number(s.slice(4, 6)) - 1, Number(s.slice(6, 8)))).toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
 }
 
 function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string }) {
@@ -49,6 +65,7 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
   const [card, setCard] = useState<Card | null>(null);
   const [paying, setPaying] = useState(false);
   const [followUp, setFollowUp] = useState<FollowUp | null>(null);
+  const [day, setDay] = useState(initial.today);
   const { react } = useCompanion();
   const router = useRouter();
   const messagesRef = useRef<ChatMessage[]>([]);
@@ -102,6 +119,11 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
   };
 
   const onCard = async (action: CardAction) => {
+    if (action.type === "ask") {
+      setCard(null);
+      ask({ text: action.text });
+      return;
+    }
     if (action.type === "pick") {
       // Picking an option from a list turns it into a single proposal.
       setCard({ ...action.card, limitLeft: state.limit.remaining } as Card);
@@ -114,13 +136,11 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
     }
     const c = action.card;
     const body =
-      c.kind === "trip"
-        ? { kind: "trip", flightId: c.flight.id, museumTime: c.museum?.time ?? null }
-        : c.kind === "museum"
-          ? { kind: "museum", time: c.time }
-          : c.kind === "product"
-            ? { kind: "product", productId: c.product.id }
-            : null;
+      c.kind === "proposal"
+        ? { kind: "proposal", flightIds: c.flights.map((f) => f.id), museums: c.museums.map((m) => ({ museumId: m.museumId, date: m.date, time: m.time })) }
+        : c.kind === "product"
+          ? { kind: "product", productId: c.product.id }
+          : null;
     if (!body) return;
     setPaying(true);
     try {
@@ -132,6 +152,8 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
       const data = await res.json();
       if (res.ok) {
         setCard(null);
+        const firstDate = c.kind === "proposal" ? [...c.flights.map((f) => f.date), ...c.museums.map((m) => m.date)].sort()[0] : undefined;
+        if (firstDate) setDay(firstDate);
         say(data.message, data.links);
         react("happy");
         refresh();
@@ -145,6 +167,22 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
       setPaying(false);
     }
   };
+
+  // Flight delay reported from /control: the server already worked out the new
+  // arrival and the museum slots; Dino applies them and tells the user.
+  useEffect(() => {
+    const channel = getBrowserSupabase()
+      .channel("agent")
+      .on("broadcast", { event: "flight_delayed" }, ({ payload }) => {
+        const key = `${payload.flightId}`;
+        if (handledEvents.current.has(key)) return;
+        handledEvents.current.add(key);
+        ask({ event: String(payload.instruction) });
+      })
+      .subscribe();
+    return () => void getBrowserSupabase().removeChannel(channel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Street report follow-up (triggered from /control for the demo).
   useEffect(() => {
@@ -187,13 +225,6 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
 
   useChainEvents((rows: HistoryRow[]) => {
     const mine = rows.filter((r) => r.user === wallet);
-    for (const r of mine) {
-      if (r.kind === "delay_refund" && !handledEvents.current.has(r.id)) {
-        handledEvents.current.add(r.id);
-        // Toast shows the fact; Dino acts on it (reschedules the museum) and posts in chat.
-        ask({ event: r.note });
-      }
-    }
     if (mine.some((r) => r.kind === "delay_refund")) react("happy", "Refund received!");
     else if (mine.some((r) => r.kind === "bottle_recycled")) react("jump", "+0.50 credit");
     else if (mine.length) react("jump");
@@ -204,9 +235,24 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
     <div className="agent-grid p-4 sm:p-6" data-expanded={expanded}>
       <section className="area-cal panel relative flex min-h-0 flex-col p-4">
         {expanded ? (
-          <WeekCalendar events={state.calendar} className="min-h-0 flex-1" />
+          <WeekCalendar events={state.calendar} today={state.today} className="min-h-0 flex-1" />
         ) : (
-          <DayCalendar title="Today" events={state.calendar} hourHeight={34} className="min-h-0 flex-1" />
+          <DayCalendar
+            events={state.calendar.filter((e) => (e.date ?? state.today) === day)}
+            hourHeight={34}
+            className="min-h-0 flex-1"
+            header={
+              <div className="mb-3 flex items-center gap-1 pr-12">
+                <button className="icon-btn size-8!" onClick={() => setDay((d) => shiftDate(d, -1))} disabled={day <= state.today} aria-label="Previous day">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
+                </button>
+                <span className="label min-w-[92px] text-center">{dayLabel(day, state.today)}</span>
+                <button className="icon-btn size-8!" onClick={() => setDay((d) => shiftDate(d, 1))} disabled={day >= shiftDate(state.today, 6)} aria-label="Next day">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg>
+                </button>
+              </div>
+            }
+          />
         )}
         <button
           className="icon-btn absolute top-2.5 right-2.5 hidden lg:inline-flex"

@@ -204,15 +204,29 @@ async function invokeNow<T>({ source, contract, method, args = [], walletKey, er
 
   const prepared = rpc.assembleTransaction(tx, sim).build();
   prepared.sign(kp);
-  const sent = await server.sendTransaction(prepared);
+  const localHash = Buffer.from(prepared.hash()).toString("hex");
+  let sent = await server.sendTransaction(prepared);
+  // The network can ask us to resubmit when it is busy.
+  for (let i = 0; i < 3 && sent.status === "TRY_AGAIN_LATER"; i++) {
+    await new Promise((r) => setTimeout(r, 1500));
+    sent = await server.sendTransaction(prepared);
+  }
   if (sent.status === "ERROR") throw new Error(`${method} rejected: ${sent.errorResult?.toJSON() ? JSON.stringify(sent.errorResult.toJSON()).slice(0, 200) : "error"}`);
+  if (sent.status === "TRY_AGAIN_LATER") throw new Error(`${method}: network busy, try again`);
+  if (sent.hash !== localHash) console.warn(`[stellar] ${method}: rpc hash ${sent.hash} != local ${localHash}`);
 
-  const done = await server.pollTransaction(sent.hash, { attempts: 30 });
+  let hash = localHash;
+  let done = await server.pollTransaction(hash, { attempts: 60 });
+  if (done.status === rpc.Api.GetTransactionStatus.NOT_FOUND && sent.hash !== localHash) {
+    hash = sent.hash;
+    done = await server.pollTransaction(hash, { attempts: 10 });
+  }
   if (done.status !== rpc.Api.GetTransactionStatus.SUCCESS) {
-    throw new Error(`${method} failed on chain (${done.status}). Tx ${sent.hash}`);
+    console.warn(`[stellar] ${method}: send status ${sent.status}, final ${done.status}, hash ${hash}`);
+    throw new Error(`${method} failed on chain (${done.status}). Tx ${hash}`);
   }
   const retval = done.returnValue;
-  return { txHash: sent.hash, explorerUrl: txUrl(sent.hash), result: (retval ? scValToNative(retval) : undefined) as T };
+  return { txHash: hash, explorerUrl: txUrl(hash), result: (retval ? scValToNative(retval) : undefined) as T };
 }
 
 /** Wallet / policy errors (OpenZeppelin codes) apply to every wallet call. */

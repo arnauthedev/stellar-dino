@@ -27,11 +27,12 @@ export function SkyscannerdLogo({ className }: { className?: string }) {
 export type CardAction =
   | { type: "accept"; card: Card }
   | { type: "reject"; card: Card }
-  | { type: "pick"; card: Card };
+  | { type: "pick"; card: Card }
+  | { type: "ask"; text: string };
 
 const usd = (n: number) => n.toFixed(2);
 
-function Row({ label, value, sub }: { label: string; value: React.ReactNode; sub?: React.ReactNode }) {
+function Row({ label, value, sub }: { label: React.ReactNode; value: React.ReactNode; sub?: React.ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-4 py-1.5">
       <span className="text-sm text-subtle">{label}</span>
@@ -48,16 +49,22 @@ function FlightLine({ f, big }: { f: FlightOption; big?: boolean }) {
     <div className="flex items-center gap-4">
       <div>
         <div className={`num ${big ? "text-3xl" : "text-xl"} font-medium`}>{f.depart}</div>
-        <div className="text-xs text-subtle">{f.from} · Lisbon</div>
+        <div className="text-xs text-subtle">
+          {f.from} · {f.fromCity}
+        </div>
       </div>
       <div className="flex flex-1 flex-col items-center text-[11px] text-faint">
-        <span className="num">{f.code}</span>
+        <span className="num">
+          {f.code} · {f.dateLabel}
+        </span>
         <div className="my-1 h-px w-full bg-line" />
         <span>direct</span>
       </div>
       <div className="text-right">
         <div className={`num ${big ? "text-3xl" : "text-xl"} font-medium`}>{f.arrive}</div>
-        <div className="text-xs text-subtle">{f.to} · {f.to === "CDG" ? "Paris" : f.to === "AMS" ? "Amsterdam" : ""}</div>
+        <div className="text-xs text-subtle">
+          {f.to} · {f.toCity}
+        </div>
       </div>
     </div>
   );
@@ -74,18 +81,26 @@ export function CardView({
   onAction: (a: CardAction) => void;
   onClose: () => void;
 }) {
-  const proposal = card.kind === "trip" || card.kind === "museum" || card.kind === "product";
+  const proposal = card.kind === "proposal" || card.kind === "product";
+  const showsAirline = (card.kind === "proposal" && card.flights.length > 0) || card.kind === "flights";
+  const heading =
+    card.kind === "product" || card.kind === "products"
+      ? "Airport shop"
+      : card.kind === "museums"
+        ? `Museums in Lisbon · ${card.dateLabel}`
+        : card.kind === "museum_slots"
+          ? `${card.name} · ${card.dateLabel}`
+          : card.kind === "flights"
+            ? card.dateLabel
+            : "Your plan";
 
   return (
     <div className="card flex max-h-full w-full max-w-xl flex-col overflow-hidden animate-[pop-in_.22s_ease-out]">
       <div className="flex items-center justify-between gap-3 border-b border-line px-6 py-4">
-        {card.kind === "trip" || card.kind === "flights" ? (
-          <SkyscannerdLogo />
-        ) : (
-          <span className="label">
-            {card.kind === "product" || card.kind === "products" ? "Airport shop" : card.kind === "museum" || card.kind === "museum_slots" ? card.name : ""}
-          </span>
-        )}
+        <div className="flex min-w-0 items-center gap-3">
+          {showsAirline && <SkyscannerdLogo />}
+          <span className="label truncate">{heading}</span>
+        </div>
         <button className="icon-btn size-9!" onClick={onClose} aria-label="Close card">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
             <path d="m6 6 12 12M18 6 6 18" />
@@ -94,29 +109,30 @@ export function CardView({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-        {card.kind === "trip" && (
+        {card.kind === "proposal" && (
           <div className="space-y-5">
-            <FlightLine f={card.flight} big />
+            {card.flights.map((f) => (
+              <FlightLine key={f.id} f={f} big={card.flights.length === 1} />
+            ))}
             <div className="rounded-ctl bg-field px-4 py-2">
-              <Row label={`${card.airline} ${card.flight.code}`} value={`${usd(card.flight.price)} USDC`} sub={`${usd(card.flight.held)} held until landing, refunded if late`} />
-              {card.museum && (
-                <>
-                  <Row label={`Taxi to the museum`} value={`${card.museum.travelMinutes} min`} />
-                  <Row label={`${card.museum.name} · entry ${card.museum.time}`} value={`${usd(card.museum.price)} USDC`} />
-                </>
-              )}
+              {card.flights.map((f) => (
+                <Row key={f.id} label={`${card.airline} ${f.code} · ${f.dateLabel}`} value={`${usd(f.price)} USDC`} sub={`${usd(f.held)} held until landing, refunded if late`} />
+              ))}
+              {card.museums.map((m) => (
+                <Row
+                  key={`${m.museumId}-${m.date}`}
+                  label={
+                    <>
+                      {m.name} · {m.dateLabel} {m.time}
+                      <span className="block text-xs text-faint">{m.style}</span>
+                    </>
+                  }
+                  value={m.reschedule ? "move, free" : `${usd(m.price)} USDC`}
+                />
+              ))}
               <div className="mt-1 border-t border-line pt-1">
-                <Row label="Total" value={<b className="font-medium">{usd(card.total)} USDC</b>} sub={`${usd(card.limitLeft)} left in today's limit`} />
+                <Row label="Total" value={<b className="font-medium">{usd(card.total)} USDC</b>} sub={Number.isFinite(card.limitLeft) ? `${usd(card.limitLeft)} left in today's limit` : undefined} />
               </div>
-            </div>
-          </div>
-        )}
-
-        {card.kind === "museum" && (
-          <div className="space-y-4">
-            <div className="num text-4xl font-medium">{card.time}</div>
-            <div className="rounded-ctl bg-field px-4 py-2">
-              <Row label={card.reschedule ? "Move your booking" : "Timed entry"} value={card.reschedule ? "free" : `${usd(card.price)} USDC`} />
             </div>
           </div>
         )}
@@ -132,10 +148,7 @@ export function CardView({
                   className="w-full rounded-ctl bg-field px-4 py-3 text-left hover:bg-muted-hover"
                   disabled={busy}
                   onClick={() =>
-                    onAction({
-                      type: "pick",
-                      card: { kind: "trip", airline: card.airline, flight: f, museum: null, total: f.price, limitLeft: NaN },
-                    })
+                    onAction({ type: "pick", card: { kind: "proposal", airline: card.airline, flights: [f], museums: [], total: f.price, limitLeft: NaN } })
                   }
                 >
                   <FlightLine f={f} />
@@ -148,22 +161,52 @@ export function CardView({
           </ul>
         )}
 
+        {card.kind === "museums" && (
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {card.options.map((m) => (
+              <li key={m.id}>
+                <button
+                  className="h-full w-full rounded-ctl bg-field px-4 py-3 text-left hover:bg-muted-hover"
+                  disabled={busy}
+                  onClick={() => onAction({ type: "ask", text: `Show me the times for ${m.name} on ${card.dateLabel}.` })}
+                >
+                  <div className="font-medium">{m.name}</div>
+                  <div className="text-xs text-subtle">{m.style}</div>
+                  <div className="mt-2 flex justify-between text-sm">
+                    <span className="text-faint">{m.minutesFromAirport} min from airport</span>
+                    <span className="num">{usd(m.price)} USDC</span>
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
         {card.kind === "museum_slots" && (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {card.options.length === 0 && <p className="col-span-full text-sm text-subtle">No free slots.</p>}
             {card.options.map((s) => (
               <button
                 key={s.time}
-                className="rounded-ctl bg-field px-3 py-3 text-center hover:bg-muted-hover"
+                className="num rounded-ctl bg-field px-3 py-3 text-center text-lg hover:bg-muted-hover"
                 disabled={busy}
                 onClick={() =>
                   onAction({
                     type: "pick",
-                    card: { kind: "museum", name: card.name, time: s.time, price: card.reschedule ? 0 : 18, reschedule: card.reschedule, limitLeft: NaN },
+                    card: {
+                      kind: "proposal",
+                      airline: "",
+                      flights: [],
+                      museums: [
+                        { museumId: card.museumId, name: card.name, style: card.style, date: card.date, dateLabel: card.dateLabel, time: s.time, price: card.reschedule ? 0 : card.price, reschedule: card.reschedule },
+                      ],
+                      total: card.reschedule ? 0 : card.price,
+                      limitLeft: NaN,
+                    },
                   })
                 }
               >
-                <div className="num text-lg">{s.time}</div>
-                <div className="text-[11px] text-faint">{s.free} free</div>
+                {s.time}
               </button>
             ))}
           </div>
@@ -192,7 +235,7 @@ export function CardView({
             Reject
           </button>
           <button className="btn btn-primary flex-[2]" disabled={busy} onClick={() => onAction({ type: "accept", card })}>
-            {busy ? "Paying from your wallet…" : card.kind === "museum" && card.reschedule ? "Accept (free)" : "Accept & pay"}
+            {busy ? "Paying from your wallet…" : card.kind === "proposal" && card.total === 0 ? "Accept (free)" : "Accept & pay"}
           </button>
         </div>
       )}
@@ -215,9 +258,7 @@ function ProductBlock({ p, credit, big }: { p: ProductOption; credit: number; bi
         {p.sustainable ? <span className="badge badge-good">♻ Sustainable</span> : <span className="badge">Full price</span>}
         {discounted && <span className="badge badge-good">Government pays {usd(p.price - p.youPay)}</span>}
       </div>
-      {big && p.sustainable && credit === 0 && (
-        <p className="text-xs text-subtle">Recycle a bottle to get 0.50 USDC off sustainable products.</p>
-      )}
+      {big && p.sustainable && credit === 0 && <p className="text-xs text-subtle">Recycle a bottle to get 0.50 USDC off sustainable products.</p>}
     </div>
   );
 }

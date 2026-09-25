@@ -49,8 +49,8 @@ git push           # push to main = production deploy on Vercel
 | Crate | What it does |
 |---|---|
 | `shop-recycling` | Products with a sustainable flag, bottle counting, fixed recycling credit, government subsidy pool. At checkout the user pays price minus credit and the pool pays the credit, in one transaction. |
-| `airline` | Ticket sales with 20% held in the contract; the oracle reports on time (hold released to the airline) or delayed (hold refunded to the passenger). |
-| `museum` | Timed slots, paid booking, free reschedule. |
+| `airline` | Skyscannerd timetable (BCN, CDG, LHR, AMS ↔ LIS); a flight is route + date. Ticket sales with 20% held in the contract; the oracle reports on time (hold released) or delayed (hold refunded). |
+| `museum` | Several Lisbon museums (Gulbenkian, Arte Antiga, Azulejo, MAAT); default slots for any date, paid booking, free reschedule. |
 | `smart-wallet` | The user's OpenZeppelin smart account. Rule 0 = owner (user key, can change settings). Rules 1-4 = agent key, scoped to USDC transfers (with the spending-limit policy) and to the shop, airline and museum. The agent cannot change or bypass the limit. |
 | `spending-limit-policy`, `ed25519-verifier` | OpenZeppelin example contracts used by the wallet. |
 | `notes` | Helper that builds the readable `note` string in every event. |
@@ -90,7 +90,9 @@ To reset only the demo state (not the accounts), use `resetDemo()` from `lib/ste
 shop, credit, history, travel time, open game), all wrapping `lib/stellar.ts`. `lib/ai.ts` is the only
 module that talks to the model (`AI_MODEL`, `AI_REASONING_EFFORT`); if multi-step tool use slips, set
 `AI_MODEL=gpt-5.6-terra`. `/api/chat` runs it; when a `delay_refund` event arrives, the agent page sends
-it to Dino as an event and Dino reschedules the museum and posts about it.
+it to Dino as an event and Dino reschedules the museum and posts about it. The delay button in `/control`
+computes the new arrival and the museum slots on the server (`lib/agent/delay.ts`) and sends them to Dino over
+Supabase Realtime, so Dino only has to apply them. The user lives in Barcelona and bookings are open from today to +6 days.
 
 ```bash
 npm run test:agent   # resets the demo and runs the full conversation (real model + testnet)

@@ -14,15 +14,19 @@ export type { TxResult };
 
 export type FlightStatus = "Scheduled" | "OnTime" | "Delayed";
 
+/** A timetable route on a date. id = `${code}_${date}`, e.g. "SK101_20260926". */
 export type Flight = {
   id: string;
   code: string;
-  from: string;
+  date: number; // yyyymmdd
+  from: string; // IATA
   to: string;
+  fromCity: string;
+  toCity: string;
   depart: string; // "HH:MM"
   arrive: string; // "HH:MM" (includes delay)
   departMinutes: number;
-  arriveMinutes: number;
+  arriveMinutes: number; // includes delay
   price: number;
   status: FlightStatus;
   delayMinutes: number;
@@ -32,7 +36,16 @@ export type Product = { id: string; name: string; price: number; sustainable: bo
 
 export type MuseumSlot = { time: string; minutes: number; capacity: number; booked: number; free: number };
 
-export type MuseumBooking = { date: number; time: string; minutes: number; price: number };
+export type Museum = { id: string; name: string; style: string; city: "Lisbon"; price: number };
+
+export type MuseumBooking = {
+  museumId: string;
+  museumName: string;
+  date: number;
+  time: string;
+  minutes: number;
+  price: number;
+};
 
 export type Receipt = { price: number; userPaid: number; govPaid: number };
 
@@ -93,7 +106,7 @@ export function toMinutes(time: string | number): number {
   return h * 60 + (m || 0);
 }
 
-/** Today's date in Lisbon as yyyymmdd (museum slot dates). */
+/** Today's date in Lisbon as yyyymmdd (flight and museum dates). */
 export function demoDate(offsetDays = 0): number {
   const d = new Date(Date.now() + offsetDays * 86_400_000);
   const s = d.toLocaleDateString("en-CA", { timeZone: "Europe/Lisbon" }); // 2026-09-25
@@ -101,14 +114,30 @@ export function demoDate(offsetDays = 0): number {
 }
 
 const SHOP_ERRORS = { 1: "Product not found", 2: "No unrecycled bottle bought at the shop", 3: "Invalid amount" };
-const AIRLINE_ERRORS = { 1: "Flight not found", 2: "Invalid amount", 3: "Flight already reported", 4: "Already booked on this flight" };
-const MUSEUM_ERRORS = { 1: "Museum slot not found", 2: "Slot is full", 3: "Museum already booked", 4: "No museum booking", 5: "Invalid amount" };
+const AIRLINE_ERRORS = {
+  1: "Flight not found",
+  2: "Invalid amount",
+  3: "Flight already reported",
+  4: "Already booked on this flight",
+  5: "Invalid date",
+};
+const MUSEUM_ERRORS = {
+  1: "No such museum slot (10:00-18:00 every 30 min)",
+  2: "Slot is full",
+  3: "Already booked at this museum on that date",
+  4: "No booking at this museum on that date",
+  5: "Invalid amount",
+  6: "Museum not found",
+  7: "Invalid date",
+};
 
 type RawFlight = {
-  id: string;
   code: string;
+  date: number;
   from: string;
   to: string;
+  from_city: string;
+  to_city: string;
   depart: number;
   arrive: number;
   price: bigint;
@@ -116,14 +145,27 @@ type RawFlight = {
   delay_minutes: number;
 };
 
+export function flightId(code: string, date: number): string {
+  return `${code}_${date}`;
+}
+
+export function parseFlightId(id: string): { code: string; date: number } {
+  const m = /^([A-Za-z0-9]+)_(\d{8})$/.exec(id.trim());
+  if (!m) throw new Error(`Invalid flight id "${id}" (expected CODE_yyyymmdd, e.g. SK101_${demoDate()})`);
+  return { code: m[1].toUpperCase(), date: Number(m[2]) };
+}
+
 function mapFlight(f: RawFlight): Flight {
   const status = (Array.isArray(f.status) ? f.status[0] : f.status) as FlightStatus;
   const delay = status === "Delayed" ? f.delay_minutes : 0;
   return {
-    id: f.id,
+    id: flightId(f.code, f.date),
     code: f.code,
+    date: f.date,
     from: f.from,
     to: f.to,
+    fromCity: f.from_city,
+    toCity: f.to_city,
     depart: hhmm(f.depart),
     arrive: hhmm(f.arrive + delay),
     departMinutes: f.depart,
@@ -136,75 +178,97 @@ function mapFlight(f: RawFlight): Flight {
 
 /* ---------- Airline ---------- */
 
-export async function listFlights(): Promise<Flight[]> {
-  return (await read<RawFlight[]>(CONTRACTS.airline, "flights")).map(mapFlight);
+/** Flights of the daily timetable on a date (default today), optionally filtered by IATA from/to. */
+export async function listFlights(opts: { date?: number; from?: string; to?: string } = {}): Promise<Flight[]> {
+  const date = opts.date ?? demoDate();
+  const from = opts.from?.trim().toUpperCase();
+  const to = opts.to?.trim().toUpperCase();
+  return (await read<RawFlight[]>(CONTRACTS.airline, "flights", sv.u32(date)))
+    .map(mapFlight)
+    .filter((f) => (!from || f.from.toUpperCase() === from) && (!to || f.to.toUpperCase() === to));
 }
 
-export async function getFlight(flightId: string): Promise<Flight> {
-  return mapFlight(await read<RawFlight>(CONTRACTS.airline, "flight", sv.symbol(flightId)));
+export async function getFlight(id: string): Promise<Flight> {
+  const { code, date } = parseFlightId(id);
+  return mapFlight(await read<RawFlight>(CONTRACTS.airline, "flight", sv.symbol(code), sv.u32(date)));
 }
 
-/** The user's flights (from passenger lists). */
+/** The user's flights (tickets_of the wallet), sorted by date then departure. */
 export async function getMyFlights(): Promise<(Flight & { held: number; settled: boolean })[]> {
-  const flights = await listFlights();
-  const out = [];
-  for (const f of flights) {
-    const passengers = await read<{ user: string; held: bigint; settled: boolean }[]>(
-      CONTRACTS.airline,
-      "passengers",
-      sv.symbol(f.id),
-    );
-    const mine = passengers.find((p) => p.user === WALLET);
-    if (mine) out.push({ ...f, held: toUsdc(mine.held), settled: mine.settled });
-  }
-  return out;
+  const tickets = await read<{ code: string; date: number; held: bigint; settled: boolean }[]>(
+    CONTRACTS.airline,
+    "tickets_of",
+    sv.address(WALLET),
+  );
+  const out = await Promise.all(
+    tickets.map(async (t) => ({
+      ...(await getFlight(flightId(t.code, t.date))),
+      held: toUsdc(t.held),
+      settled: t.settled,
+    })),
+  );
+  return out.sort((a, b) => a.date - b.date || a.departMinutes - b.departMinutes);
 }
 
 /** Agent buys a flight ticket from the user's smart wallet. 20% is held until landing. */
-export async function buyFlight(flightId: string): Promise<TxResult<{ price: number; held: number }>> {
+export async function buyFlight(id: string): Promise<TxResult<{ price: number; held: number }>> {
+  const { code, date } = parseFlightId(id);
   const r = await invoke<{ price: bigint; held: bigint }>({
     source: "agent",
     walletKey: "agent",
     contract: CONTRACTS.airline,
     method: "buy_ticket",
-    args: [sv.address(WALLET), sv.symbol(flightId)],
+    args: [sv.address(WALLET), sv.symbol(code), sv.u32(date)],
     errors: AIRLINE_ERRORS,
   });
   return { ...r, result: { price: toUsdc(r.result.price), held: toUsdc(r.result.held) } };
 }
 
 /** Demo oracle (control panel) reports the flight: releases holds or refunds them. */
-export async function reportFlightStatus(
-  flightId: string,
-  delayed: boolean,
-  delayMinutes = 120,
-): Promise<TxResult<Flight>> {
+export async function reportFlightStatus(id: string, delayed: boolean, delayMinutes = 120): Promise<TxResult<Flight>> {
+  const { code, date } = parseFlightId(id);
   const r = await invoke({
     source: "oracle",
     contract: CONTRACTS.airline,
     method: "report_status",
-    args: [sv.symbol(flightId), sv.bool(delayed), sv.u32(delayed ? delayMinutes : 0)],
+    args: [sv.symbol(code), sv.u32(date), sv.bool(delayed), sv.u32(delayed ? delayMinutes : 0)],
     errors: AIRLINE_ERRORS,
   });
-  return { ...r, result: await getFlight(flightId) };
+  return { ...r, result: await getFlight(id) };
 }
 
 /* ---------- Museum ---------- */
 
-const MUSEUM_TIMES = Array.from({ length: 17 }, (_, i) => 600 + i * 30); // 10:00-18:00
+type RawBooking = { museum_id: string; date: number; time: number; price: bigint };
 
-export async function museumSlots(date = demoDate()): Promise<MuseumSlot[]> {
-  let slots = await read<{ time: number; capacity: number; booked: number }[]>(CONTRACTS.museum, "slots", sv.u32(date));
-  if (slots.length === 0) {
-    // Museum opens the day on demand.
-    await invoke({
-      source: "museum",
-      contract: CONTRACTS.museum,
-      method: "set_slots",
-      args: [sv.u32(date), sv.vecU32(MUSEUM_TIMES), sv.u32(20)],
-    });
-    slots = await read(CONTRACTS.museum, "slots", sv.u32(date));
-  }
+export async function listMuseums(): Promise<Museum[]> {
+  const raw = await read<{ id: string; name: string; style: string; price: bigint }[]>(CONTRACTS.museum, "museums");
+  return raw.map((m) => ({ id: m.id, name: m.name, style: m.style, city: "Lisbon" as const, price: toUsdc(m.price) }));
+}
+
+async function museumNames(): Promise<Map<string, string>> {
+  return new Map((await listMuseums()).map((m) => [m.id, m.name]));
+}
+
+function mapBooking(b: RawBooking, names: Map<string, string>): MuseumBooking {
+  return {
+    museumId: b.museum_id,
+    museumName: names.get(b.museum_id) ?? b.museum_id,
+    date: b.date,
+    time: hhmm(b.time),
+    minutes: b.time,
+    price: toUsdc(b.price),
+  };
+}
+
+/** Every museum opens every day 10:00-18:00, a slot every 30 min, 20 places each. */
+export async function museumSlots(museumId: string, date = demoDate()): Promise<MuseumSlot[]> {
+  const slots = await read<{ time: number; capacity: number; booked: number }[]>(
+    CONTRACTS.museum,
+    "slots",
+    sv.symbol(museumId),
+    sv.u32(date),
+  );
   return slots.map((s) => ({
     time: hhmm(s.time),
     minutes: s.time,
@@ -214,41 +278,46 @@ export async function museumSlots(date = demoDate()): Promise<MuseumSlot[]> {
   }));
 }
 
-export async function getMuseumBooking(): Promise<MuseumBooking | null> {
-  const b = await read<{ date: number; time: number; price: bigint } | undefined>(
-    CONTRACTS.museum,
-    "booking_of",
-    sv.address(WALLET),
-  );
-  return b ? { date: b.date, time: hhmm(b.time), minutes: b.time, price: toUsdc(b.price) } : null;
+/** The user's museum bookings, sorted by date and time. */
+export async function getMuseumBookings(): Promise<MuseumBooking[]> {
+  const [raw, names] = await Promise.all([
+    read<RawBooking[]>(CONTRACTS.museum, "bookings_of", sv.address(WALLET)),
+    museumNames(),
+  ]);
+  return raw.map((b) => mapBooking(b, names)).sort((a, b) => a.date - b.date || a.minutes - b.minutes);
 }
 
-export async function bookMuseum(time: string | number, date = demoDate()): Promise<TxResult<MuseumBooking>> {
-  await museumSlots(date);
-  const r = await invoke<{ date: number; time: number; price: bigint }>({
+export async function bookMuseum(
+  museumId: string,
+  time: string | number,
+  date = demoDate(),
+): Promise<TxResult<MuseumBooking>> {
+  const r = await invoke<RawBooking>({
     source: "agent",
     walletKey: "agent",
     contract: CONTRACTS.museum,
     method: "buy_ticket",
-    args: [sv.address(WALLET), sv.u32(date), sv.u32(toMinutes(time))],
+    args: [sv.address(WALLET), sv.symbol(museumId), sv.u32(date), sv.u32(toMinutes(time))],
     errors: MUSEUM_ERRORS,
   });
-  const b = r.result;
-  return { ...r, result: { date: b.date, time: hhmm(b.time), minutes: b.time, price: toUsdc(b.price) } };
+  return { ...r, result: mapBooking(r.result, await museumNames()) };
 }
 
-/** Move the user's museum booking to another slot the same day (free). */
-export async function rescheduleMuseum(newTime: string | number): Promise<TxResult<MuseumBooking>> {
-  const r = await invoke<{ date: number; time: number; price: bigint }>({
+/** Move the user's booking at a museum on a date to another slot the same day (free). */
+export async function rescheduleMuseum(
+  museumId: string,
+  newTime: string | number,
+  date = demoDate(),
+): Promise<TxResult<MuseumBooking>> {
+  const r = await invoke<RawBooking>({
     source: "agent",
     walletKey: "agent",
     contract: CONTRACTS.museum,
     method: "reschedule",
-    args: [sv.address(WALLET), sv.u32(toMinutes(newTime))],
+    args: [sv.address(WALLET), sv.symbol(museumId), sv.u32(date), sv.u32(toMinutes(newTime))],
     errors: MUSEUM_ERRORS,
   });
-  const b = r.result;
-  return { ...r, result: { date: b.date, time: hhmm(b.time), minutes: b.time, price: toUsdc(b.price) } };
+  return { ...r, result: mapBooking(r.result, await museumNames()) };
 }
 
 /* ---------- Shop + recycling ---------- */
@@ -452,6 +521,12 @@ function toRow(e: rpc.Api.EventResponse): HistoryRow | null {
   const rawAmount = data.amount ?? data.price ?? null;
   const clean: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(data)) clean[k] = typeof v === "bigint" ? toUsdc(v) : v;
+  // Second topic: flight code (airline) or museum id (museum).
+  if (contract === "airline" && topics[2] !== undefined) {
+    clean.flight = String(topics[2]);
+    if (typeof clean.date === "number") clean.flightId = flightId(String(topics[2]), clean.date);
+  }
+  if (contract === "museum" && topics[2] !== undefined) clean.museumId = String(topics[2]);
   return {
     id: e.id,
     kind,
@@ -528,37 +603,15 @@ export async function pollEvents(cursor?: string): Promise<{ rows: HistoryRow[];
 /* ---------- Demo reset ---------- */
 
 /**
- * Reset the demo state without redeploying: flights back to Scheduled, museum
- * booking cleared, shop credit/bottles cleared, spending history cleared,
+ * Reset the demo state without redeploying: the user's tickets removed and those
+ * flights back to Scheduled, museum bookings cleared, shop credit/bottles cleared, spending history cleared,
  * wallet topped up to 500 USDC and the pool to 100 USDC.
  */
 export async function resetDemo(): Promise<string[]> {
   const log: string[] = [];
-  const flights = await read<RawFlight[]>(CONTRACTS.airline, "flights");
-  for (const f of flights) {
-    await invoke({
-      source: "airline",
-      contract: CONTRACTS.airline,
-      method: "add_flight",
-      args: [
-        sv.symbol(f.id),
-        sv.string(f.code),
-        sv.string(f.from),
-        sv.string(f.to),
-        sv.u32(f.depart),
-        sv.u32(f.arrive),
-        sv.i128(BigInt(f.price)),
-      ],
-    });
-  }
+  await invoke({ source: "airline", contract: CONTRACTS.airline, method: "reset_user", args: [sv.address(WALLET)] });
   log.push("flights reset");
 
-  await invoke({
-    source: "museum",
-    contract: CONTRACTS.museum,
-    method: "set_slots",
-    args: [sv.u32(demoDate()), sv.vecU32(MUSEUM_TIMES), sv.u32(20)],
-  });
   await invoke({ source: "museum", contract: CONTRACTS.museum, method: "reset_user", args: [sv.address(WALLET)] });
   log.push("museum reset");
 

@@ -5,7 +5,7 @@
 #   2. trustlines + starting balances
 #   3. contracts: ed25519 verifier, spending-limit policy, shop_recycling,
 #      airline, museum, user smart wallet (OpenZeppelin smart account)
-#   4. demo data: products, flights, museum slots, government subsidy pool
+#   4. demo data: products, flight timetable, museums, government subsidy pool
 #   5. writes config/contracts.ts (public IDs, committed)
 set -euo pipefail
 
@@ -75,8 +75,8 @@ SHOP_C=$(deploy issuer shop_recycling -- --shop "$SHOP" --government "$GOV" --re
 step "deploying airline (20% held until landing)"
 AIRLINE_C=$(deploy issuer airline -- --airline "$AIRLINE" --oracle "$ORACLE" --token "$USDC" --hold_bps 2000)
 
-step "deploying museum (18 USDC per entry)"
-MUSEUM_C=$(deploy issuer museum -- --museum "$MUSEUM" --token "$USDC" --price $((18 * U)))
+step "deploying museum (Lisbon museums, default 10:00-18:00 slots every day)"
+MUSEUM_C=$(deploy issuer museum -- --museum "$MUSEUM" --token "$USDC")
 
 step "deploying user smart wallet (limit 300 USDC per day, set by the user)"
 WALLET=$(deploy issuer smart_wallet -- \
@@ -102,18 +102,36 @@ add_product tote "Recycled tote bag" $((8 * U)) true false
 add_product sandwich "Sandwich" $((45 * U / 10)) false false
 add_product chocolate "Chocolate" $((3 * U)) false false
 
-step "Skyscannerd flights"
-add_flight() { invoke airline "$AIRLINE_C" -- add_flight --id "$1" --code "$1" --from "$2" --to "$3" --depart "$4" --arrive "$5" --price "$6" >/dev/null; }
-add_flight SK432 LIS CDG 600 815 $((120 * U))
-add_flight SK438 LIS CDG 900 1115 $((95 * U))
-add_flight SK650 LIS AMS 660 880 $((110 * U))
+step "Skyscannerd timetable (every route flies every day)"
+# route <code> <from> <to> <from_city> <to_city> <depart HH:MM> <arrive HH:MM> <price USDC>
+ROUTES=()
+route() {
+  local dep=$((10#${6%%:*} * 60 + 10#${6##*:})) arr=$((10#${7%%:*} * 60 + 10#${7##*:}))
+  ROUTES+=("{\"code\":\"$1\",\"from\":\"$2\",\"to\":\"$3\",\"from_city\":\"$4\",\"to_city\":\"$5\",\"depart\":$dep,\"arrive\":$arr,\"price\":\"$(($8 * U))\"}")
+}
+route SK101 BCN LIS Barcelona Lisbon 08:00 09:05 89
+route SK103 BCN LIS Barcelona Lisbon 12:30 13:35 79
+route SK105 BCN LIS Barcelona Lisbon 18:00 19:05 99
+route SK102 LIS BCN Lisbon Barcelona 10:00 13:05 89
+route SK104 LIS BCN Lisbon Barcelona 16:00 19:05 85
+route SK201 CDG LIS Paris Lisbon 07:30 09:05 120
+route SK203 CDG LIS Paris Lisbon 14:00 15:35 95
+route SK202 LIS CDG Lisbon Paris 10:00 13:35 120
+route SK204 LIS CDG Lisbon Paris 17:00 20:35 105
+route SK301 LHR LIS London Lisbon 09:00 11:40 110
+route SK302 LIS LHR Lisbon London 13:00 15:40 110
+route SK401 AMS LIS Amsterdam Lisbon 08:30 11:15 115
+route SK402 LIS AMS Lisbon Amsterdam 12:30 16:50 115
+invoke airline "$AIRLINE_C" -- set_timetable --routes "[$(IFS=,; echo "${ROUTES[*]}")]" >/dev/null
 
-step "museum slots (10:00-18:00 every 30 min) for today and tomorrow"
-TIMES="[$(seq 600 30 1080 | paste -sd, -)]"
-for offset in 0 1; do
-  DATE=$(TZ=Europe/Lisbon date -v+${offset}d +%Y%m%d)
-  invoke museum "$MUSEUM_C" -- set_slots --date "$DATE" --times "$TIMES" --capacity 20 >/dev/null
-done
+step "Lisbon museums"
+MUSEUMS=()
+museum() { MUSEUMS+=("{\"id\":\"$1\",\"name\":\"$2\",\"style\":\"$3\",\"price\":\"$(($4 * U))\"}"); }
+museum gulbenkian "Museu Calouste Gulbenkian" "classic art" 14
+museum mnaa "Museu Nacional de Arte Antiga" "ancient and classic art" 15
+museum azulejo "Museu Nacional do Azulejo" "tiles and decorative art" 10
+museum maat "MAAT" "contemporary art and architecture" 13
+invoke museum "$MUSEUM_C" -- set_museums --museums "[$(IFS=,; echo "${MUSEUMS[*]}")]" >/dev/null
 
 step "writing config/contracts.ts"
 cat > config/contracts.ts <<EOF

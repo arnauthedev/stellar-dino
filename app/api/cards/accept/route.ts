@@ -5,7 +5,7 @@ export const maxDuration = 90;
 
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as AcceptRequest | null;
-  if (!body || !["trip", "flight", "museum", "product"].includes(body.kind)) {
+  if (!body || !["proposal", "product"].includes(body.kind)) {
     return NextResponse.json({ error: "Invalid card" }, { status: 400 });
   }
   try {
