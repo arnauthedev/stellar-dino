@@ -97,20 +97,55 @@ const DINO_LEGS = {
 
 export type DinoPose = keyof typeof DINO_LEGS;
 
+export type DinoLook = { x: -1 | 0 | 1; y: -1 | 0 | 1 };
+
+const EYE = { x: 12, y: 1 };
+
+/** Head with the eye hole moved 1px toward `look` (or closed when blinking). */
+function dinoHead(blink: boolean, look?: DinoLook): Bitmap {
+  if (blink) return DINO_HEAD_BLINK;
+  if (!look || (look.x === 0 && look.y <= 0)) return DINO_HEAD;
+  const ex = EYE.x + look.x;
+  // Row 0 is the head's top edge: a hole there reads as a notch, so "up" keeps the eye on row 1.
+  const ey = EYE.y + Math.max(0, look.y);
+  return DINO_HEAD_BLINK.map((row, i) => (i === ey ? row.slice(0, ex) + "o" + row.slice(ex + 1) : row));
+}
+
+/** Overlay two rows: ink wins over empty, holes win over ink. */
+function mergeRows(a: string, b: string): string {
+  let out = "";
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const ca = a[i] ?? ".";
+    const cb = b[i] ?? ".";
+    out += ca === "o" || cb === "o" ? "o" : ca === "#" || cb === "#" ? "#" : ".";
+  }
+  return out;
+}
+
 export function DinoSprite({
   className,
   color = "var(--color-dino)",
   pose = "stand",
   blink = false,
   label = "Dino",
+  look,
+  nod = false,
 }: {
   className?: string;
   color?: string;
   pose?: DinoPose;
   blink?: boolean;
   label?: string;
+  /** Move the eye 1px toward this direction (default: centred). */
+  look?: DinoLook;
+  /** Dip the head (first 7 rows) down by 1px. */
+  nod?: boolean;
 }) {
-  const bitmap = [...(blink ? DINO_HEAD_BLINK : DINO_HEAD), ...DINO_BODY, ...DINO_LEGS[pose]];
+  const head = dinoHead(blink, look);
+  const legs = DINO_LEGS[pose];
+  const bitmap = nod
+    ? [".".repeat(20), ...head.slice(0, -1), mergeRows(head[head.length - 1], DINO_BODY[0]), ...DINO_BODY.slice(1), ...legs]
+    : [...head, ...DINO_BODY, ...legs];
   return <PixelArt bitmap={bitmap} color={color} className={className} label={label} />;
 }
 

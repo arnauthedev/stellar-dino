@@ -30,36 +30,40 @@ export function ControlPanel({ flights }: { flights: Flight[] }) {
   };
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-      <section className="panel space-y-4 p-5">
+    <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
+      <section className="panel order-1 space-y-4 p-4 sm:p-5">
         <div className="label">Flight oracle · user&apos;s booked flight</div>
         {!flight ? (
-          <p className="text-sm text-subtle">The user has no booked flight yet. Ask Dino to book one.</p>
+          <p className="text-[15px] text-subtle">The user has no booked flight yet. Ask Dino to book one.</p>
         ) : (
           <>
-            <div className="flex items-center gap-3 rounded-ctl bg-accent-soft px-4 py-3">
-              <span className="num font-medium">{flight.code}</span>
-              <span className="text-sm text-subtle">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-ctl bg-accent-soft px-4 py-3">
+              <span className="num text-lg font-medium">{flight.code}</span>
+              <span className={`ml-auto sm:order-last ${STATUS_BADGE[flight.status]}`}>{flight.status === "OnTime" ? "On time" : flight.status}</span>
+              <span className="w-full text-sm text-subtle sm:w-auto">
                 {flight.from} → {flight.to} · {String(flight.date).slice(6, 8)}/{String(flight.date).slice(4, 6)} · {flight.depart}–{flight.arrive}
               </span>
-              <span className={`ml-auto ${STATUS_BADGE[flight.status]}`}>{flight.status === "OnTime" ? "On time" : flight.status}</span>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="segments" role="tablist" aria-label="Delay">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <div className="segments w-full sm:w-auto" role="tablist" aria-label="Delay">
                 {[60, 120, 180].map((m) => (
-                  <button key={m} className="segment" role="tab" aria-selected={delay === m} onClick={() => setDelay(m)}>
+                  <button key={m} className="segment min-h-11 flex-1 sm:flex-none" role="tab" aria-selected={delay === m} onClick={() => setDelay(m)}>
                     +{m / 60} h
                   </button>
                 ))}
               </div>
               <button
-                className="btn btn-primary"
+                className="btn btn-primary min-h-12 w-full sm:w-auto"
                 disabled={!!busy || flight.status !== "Scheduled"}
                 onClick={() => act("delay", () => delayFlightAction(flight.id, delay))}
               >
                 {busy === "delay" ? "Reporting…" : `Delay flight +${delay / 60} h`}
               </button>
-              <button className="btn" disabled={!!busy || flight.status !== "Scheduled"} onClick={() => act("ontime", () => onTimeAction(flight.id))}>
+              <button
+                className="btn min-h-12 w-full sm:w-auto"
+                disabled={!!busy || flight.status !== "Scheduled"}
+                onClick={() => act("ontime", () => onTimeAction(flight.id))}
+              >
                 {busy === "ontime" ? "Reporting…" : "Landed on time"}
               </button>
             </div>
@@ -68,43 +72,49 @@ export function ControlPanel({ flights }: { flights: Flight[] }) {
         )}
       </section>
 
-      <section className="panel space-y-4 p-5">
+      <section className="panel order-3 space-y-4 p-4 sm:p-5 lg:order-2">
         <div className="label">Demo</div>
-        <div className="flex flex-wrap gap-3">
-          <button className="btn" disabled={!!busy} onClick={() => act("reset", resetDemoAction)}>
+        <div className="grid gap-3 sm:flex sm:flex-wrap">
+          <button className="btn min-h-12 w-full sm:w-auto" disabled={!!busy} onClick={() => act("reset", resetDemoAction)}>
             {busy === "reset" ? "Resetting… (about a minute)" : "Reset demo"}
           </button>
-          <button className="btn" disabled={!!busy} onClick={() => act("game", resetGameAction)}>
+          <button className="btn min-h-12 w-full sm:w-auto" disabled={!!busy} onClick={() => act("game", resetGameAction)}>
             {busy === "game" ? "Resetting…" : "Reset game"}
           </button>
-          <button className="btn" disabled={!!busy} onClick={() => act("followup", reportFollowUpAction)}>
+          <button className="btn min-h-12 w-full sm:w-auto" disabled={!!busy} onClick={() => act("followup", reportFollowUpAction)}>
             {busy === "followup" ? "Sending…" : "Street report follow-up"}
           </button>
         </div>
-        <p className="text-sm text-subtle">
+        <p className="text-sm leading-relaxed text-subtle">
           Reset demo: flights back to scheduled, bookings and credit cleared, spending history cleared, wallet back to
           500 USDC and pool to 100 USDC. Reset game: removes all players and changes the join code. Street report follow-up: Dino asks whether the latest reported problem was fixed.
         </p>
-        <div>
-          <div className="label mb-2">Log</div>
-          {log.length === 0 ? (
-            <p className="text-sm text-faint">No actions yet.</p>
-          ) : (
-            <ul className="space-y-2 text-sm">
-              {log.map((l, i) => (
-                <li key={i} className="flex gap-3">
-                  <span className="num text-faint">{l.at}</span>
-                  <span className={l.ok ? "" : "text-bad"}>{l.message}</span>
-                  {l.explorerUrl && (
-                    <a className="ml-auto flex-none text-accent-ink underline" href={l.explorerUrl} target="_blank" rel="noreferrer">
-                      View tx
-                    </a>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+      </section>
+
+      <section className="panel order-2 p-4 sm:p-5 lg:order-3 lg:col-span-2">
+        <div className="label mb-2">Log</div>
+        {log.length === 0 ? (
+          <p className="text-[15px] text-faint">No actions yet.</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {log.map((l, i) => (
+              <li key={i} className="flex flex-col gap-1 py-3 sm:flex-row sm:items-start sm:gap-3">
+                <span className="num flex-none text-xs text-faint sm:pt-0.5">{l.at}</span>
+                <span className={`min-w-0 flex-1 break-words text-[15px] leading-snug ${l.ok ? "" : "text-bad"}`}>{l.message}</span>
+                {l.explorerUrl && (
+                  <a
+                    className="flex min-h-11 flex-none items-center text-sm text-accent-ink underline sm:min-h-0"
+                    href={l.explorerUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View tx ↗
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );

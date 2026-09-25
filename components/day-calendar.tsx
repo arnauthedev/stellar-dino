@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type CalendarTone = "flight" | "museum" | "shop" | "neutral" | "delayed";
 
@@ -16,12 +16,43 @@ export type CalendarEvent = {
 };
 
 const TONES: Record<CalendarTone, string> = {
-  flight: "bg-accent-soft text-accent-ink border-accent",
-  museum: "bg-good-soft text-good border-good",
-  shop: "bg-warn-soft text-warn border-warn",
-  delayed: "bg-bad-soft text-bad border-bad",
-  neutral: "bg-chip text-ink-soft border-subtle",
+  flight: "bg-accent-soft text-accent-ink",
+  museum: "bg-good-soft text-good",
+  shop: "bg-warn-soft text-warn",
+  delayed: "bg-bad-soft text-bad",
+  neutral: "bg-chip text-ink-soft",
 };
+
+/** Minutes after midnight in Lisbon, updated every 30 s (client only). */
+function useNowMinutes(): number | null {
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    const read = () => {
+      const [h, m] = new Date()
+        .toLocaleTimeString("en-GB", { timeZone: "Europe/Lisbon", hour: "2-digit", minute: "2-digit", hour12: false })
+        .split(":")
+        .map(Number);
+      setNow((h % 24) * 60 + m);
+    };
+    const first = setTimeout(read, 0);
+    const id = setInterval(read, 30_000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(id);
+    };
+  }, []);
+  return now;
+}
+
+/** Red "now" line with a dot, like a phone calendar. */
+function NowLine({ top, left }: { top: number; left: string }) {
+  return (
+    <div className="pointer-events-none absolute right-0 z-10 flex items-center" style={{ top: top - 4, left }} aria-label="Current time">
+      <span className="size-2 flex-none rounded-full bg-bad" />
+      <span className="h-[1.5px] flex-1 bg-bad" />
+    </div>
+  );
+}
 
 function toMinutes(time: string): number {
   const [h, m] = time.split(":").map(Number);
@@ -61,6 +92,7 @@ export function DayCalendar({
   hourHeight = 40,
   title,
   header,
+  showNow,
   className,
 }: {
   events: CalendarEvent[];
@@ -70,9 +102,12 @@ export function DayCalendar({
   title?: string;
   /** Replaces the title row (e.g. day navigation). */
   header?: React.ReactNode;
+  /** Draw the current-time line (only for today). */
+  showNow?: boolean;
   className?: string;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
+  const now = useNowMinutes();
   const firstStart = events.length ? Math.min(...events.map((e) => toMinutes(e.start))) : null;
   const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
   const px = (minutes: number) => ((minutes - startHour * 60) / 60) * hourHeight;
@@ -100,6 +135,9 @@ export function DayCalendar({
               <div className="absolute right-0 left-[44px] h-px bg-line" style={{ top: px(h * 60) + 8 }} />
             </div>
           ))}
+          {showNow && now !== null && now >= startHour * 60 && now <= endHour * 60 && (
+            <NowLine top={px(now) + 8} left="40px" />
+          )}
           {/* events */}
           <div className="absolute top-2 right-0 bottom-2 left-[48px]">
             {layout(events).map(({ event, col, cols }) => {
@@ -109,7 +147,7 @@ export function DayCalendar({
               return (
                 <div
                   key={event.id}
-                  className={`absolute overflow-hidden rounded-[10px] border-l-[3px] px-2.5 text-[13px] leading-tight ${TONES[event.tone ?? "neutral"]} ${short ? "flex items-center gap-2 py-0" : "py-1.5"}`}
+                  className={`absolute overflow-hidden rounded-[10px] px-2.5 text-[13px] leading-tight ${TONES[event.tone ?? "neutral"]} ${short ? "flex items-center gap-2 py-0" : "py-1.5"}`}
                   style={{
                     top,
                     height: h,
@@ -150,6 +188,7 @@ export function WeekCalendar({
   className?: string;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
+  const nowMin = useNowMinutes();
   const px = (minutes: number) => ((minutes - startHour * 60) / 60) * hourHeight;
   const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
   const height = (endHour - startHour) * hourHeight;
@@ -204,13 +243,16 @@ export function WeekCalendar({
               className={`absolute top-2 bottom-2 border-l border-line ${i === todayIndex ? "bg-accent-soft/40" : ""}`}
               style={{ left: `calc(44px + ${i} * (100% - 44px) / 7)`, width: "calc((100% - 44px) / 7)" }}
             >
+              {i === todayIndex && nowMin !== null && nowMin >= startHour * 60 && nowMin <= endHour * 60 && (
+                <NowLine top={px(nowMin)} left="-4px" />
+              )}
               {layout(events.filter((e) => (e.date ?? today) === num(day))).map(({ event, col, cols }) => {
                   const top = px(toMinutes(event.start));
                   const h = Math.max(22, px(toMinutes(event.end)) - top - 2);
                   return (
                     <div
                       key={event.id}
-                      className={`absolute overflow-hidden rounded-[8px] border-l-[3px] px-2 py-1 text-[12px] leading-tight ${TONES[event.tone ?? "neutral"]}`}
+                      className={`absolute overflow-hidden rounded-[8px] px-2 py-1 text-[12px] leading-tight ${TONES[event.tone ?? "neutral"]}`}
                       style={{ top, height: h, left: `calc(${(col / cols) * 100}% + 3px)`, width: `calc(${100 / cols}% - 6px)` }}
                       title={`${event.title} ${event.start}–${event.end}`}
                     >

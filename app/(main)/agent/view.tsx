@@ -10,6 +10,8 @@ import { HistoryDialog, ProfileDialog } from "@/components/companion-dialogs";
 import { ReportSheet } from "@/components/report/report-sheet";
 import { DayCalendar, WeekCalendar } from "@/components/day-calendar";
 import { useChainEvents } from "@/components/live";
+import { WalletPanel } from "@/components/wallet-panel";
+import "./agent.css";
 import type { AgentState } from "@/lib/agent-state";
 import type { Card } from "@/lib/agent/cards";
 import type { SubmittedReport } from "@/lib/report/types";
@@ -66,6 +68,7 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
   const [paying, setPaying] = useState(false);
   const [followUp, setFollowUp] = useState<FollowUp | null>(null);
   const [day, setDay] = useState(initial.today);
+  const [drawer, setDrawer] = useState(false);
   const { react } = useCompanion();
   const router = useRouter();
   const messagesRef = useRef<ChatMessage[]>([]);
@@ -232,7 +235,7 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
   });
 
   return (
-    <div className="agent-grid p-4 sm:p-6" data-expanded={expanded}>
+    <div className="agent-layout p-4 sm:p-6" data-expanded={expanded}>
       <section className="area-cal panel relative flex min-h-0 flex-col p-4">
         {expanded ? (
           <WeekCalendar events={state.calendar} today={state.today} className="min-h-0 flex-1" />
@@ -240,6 +243,7 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
           <DayCalendar
             events={state.calendar.filter((e) => (e.date ?? state.today) === day)}
             hourHeight={34}
+            showNow={day === state.today}
             className="min-h-0 flex-1"
             header={
               <div className="mb-3 flex items-center gap-1 pr-12">
@@ -274,14 +278,14 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
       <section className="area-chat panel flex min-h-0 flex-col p-4">
         <header className="flex flex-wrap items-center gap-2">
           <h1 className="title px-1 text-xl">Dino</h1>
-          <div className="ml-auto flex flex-wrap items-center gap-1.5">
-            <button className="pill hover:bg-chip" onClick={() => setDialog("profile")} title="Your wallet">
+          <div className="wallet-pills ml-auto flex flex-wrap items-center gap-1.5">
+            <button className="pill hover:bg-chip" onClick={() => setDrawer(true)} title="Your wallet">
               <span className="text-subtle">Wallet</span> <b className="num font-medium">{state.wallet.toFixed(2)}</b>
             </button>
             <span className="pill" title="Recycling credit (sustainable products only)">
               <span className="text-subtle">Credit</span> <b className="num font-medium">{state.credit.toFixed(2)}</b>
             </span>
-            <button className="pill hover:bg-chip" onClick={() => setDialog("profile")} title="Daily spending limit">
+            <button className="pill hover:bg-chip" onClick={() => setDrawer(true)} title="Daily spending limit">
               <span className="text-subtle">Limit</span>{" "}
               <b className="num font-medium">
                 {state.limit.spent.toFixed(0)}/{state.limit.limit.toFixed(0)}
@@ -305,6 +309,19 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
           }
         />
       </section>
+
+      <aside className="area-side">
+        <WalletPanel state={state} onEditLimit={() => setDialog("profile")} onChanged={refresh} />
+      </aside>
+
+      {/* Smaller screens: the same panel slides in from the right. */}
+      {drawer && (
+        <div className="fixed inset-0 z-40 flex justify-end bg-[#25334a22] backdrop-blur-[2px]" onClick={() => setDrawer(false)}>
+          <div className="h-full w-[min(360px,92vw)] animate-[drawer-in_.22s_ease-out] overflow-y-auto bg-bg p-3" onClick={(e) => e.stopPropagation()}>
+            <WalletPanel state={state} onEditLimit={() => setDialog("profile")} onChanged={refresh} />
+          </div>
+        </div>
+      )}
 
       <HistoryDialog open={dialog === "history"} onClose={() => setDialog(null)} />
       <ReportSheet open={dialog === "incident"} onClose={() => setDialog(null)} onSubmitted={onReportSubmitted} />

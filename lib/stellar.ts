@@ -600,6 +600,16 @@ export async function pollEvents(cursor?: string): Promise<{ rows: HistoryRow[];
   return { rows: res.events.map(toRow).filter((r): r is HistoryRow => !!r), cursor: res.cursor };
 }
 
+/** Demo top-up: the USDC issuer mints test USDC to the user's wallet. */
+export async function topUpWallet(amount = 100): Promise<TxResult> {
+  return invoke({
+    source: "issuer",
+    contract: USDC.contract,
+    method: "mint",
+    args: [sv.address(WALLET), sv.i128(fromUsdc(amount))],
+  });
+}
+
 /* ---------- Demo reset ---------- */
 
 /**

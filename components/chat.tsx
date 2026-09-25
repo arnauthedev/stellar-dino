@@ -1,10 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { DinoPose } from "@/components/pixel";
 import { useCompanion } from "@/components/companion";
 import { DinoSprite } from "@/components/pixel";
 
 export type ChatMessage = { role: "user" | "assistant"; content: string; links?: { label: string; href: string }[] };
+
+/** Small dino that walks in place while Dino is thinking. */
+function ThinkingDino() {
+  const [pose, setPose] = useState<DinoPose>("walkA");
+  useEffect(() => {
+    const id = setInterval(() => setPose((p) => (p === "walkA" ? "walkB" : "walkA")), 160);
+    return () => clearInterval(id);
+  }, []);
+  return <DinoSprite pose={pose} className="h-6 w-auto flex-none" />;
+}
 
 const SUGGESTIONS = [
   "Plan a trip to Paris tomorrow morning with a museum visit",
@@ -64,14 +75,16 @@ export function Chat({
             </div>
           </div>
         )}
-        {messages.map((m, i) =>
-          m.role === "user" ? (
+        {messages.map((m, i) => {
+          // Dino's avatar only next to its latest message (and while thinking).
+          const lastAssistant = !busy && messages.slice(i + 1).every((x) => x.role !== "assistant");
+          return m.role === "user" ? (
             <div key={i} className="ml-auto w-fit max-w-[80%] rounded-[18px] bg-primary px-4 py-2.5 text-[15px] text-white">
               {m.content}
             </div>
           ) : (
             <div key={i} className="flex max-w-[85%] items-end gap-2">
-              <DinoSprite className="mb-1 h-5 w-auto flex-none" />
+              {lastAssistant ? <DinoSprite className="mb-1 h-5 w-auto flex-none" /> : <span className="w-[25px] flex-none" aria-hidden="true" />}
               <div className="rounded-[18px] bg-muted px-4 py-2.5 text-[15px] leading-relaxed whitespace-pre-wrap">
                 {m.content}
                 {m.links && m.links.length > 0 && (
@@ -85,14 +98,12 @@ export function Chat({
                 )}
               </div>
             </div>
-          ),
-        )}
+          );
+        })}
         {busy && (
-          <div className="flex items-end gap-2">
-            <DinoSprite className="mb-1 h-5 w-auto flex-none" />
-            <div className="rounded-[18px] bg-muted px-4 py-2.5 text-subtle">
-              <span className="animate-pulse">Dino is thinking…</span>
-            </div>
+          <div className="flex items-end gap-2.5 pl-0.5" role="status">
+            <ThinkingDino />
+            <span className="animate-pulse pb-0.5 text-sm text-faint">Dino is thinking…</span>
           </div>
         )}
         <div ref={endRef} />

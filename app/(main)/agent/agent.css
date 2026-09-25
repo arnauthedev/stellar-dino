@@ -1,0 +1,82 @@
+/* Agent page: calendar + Dino | chat | wallet & activity (wide screens).
+   Expanded calendar spans the first two columns of the top row. */
+.agent-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.agent-layout > .area-dino {
+  order: 1;
+  height: 190px;
+}
+.agent-layout > .area-cal {
+  order: 2;
+  height: 320px;
+}
+.agent-layout > .area-chat {
+  order: 3;
+  min-height: 70dvh;
+}
+.agent-layout > .area-side {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .agent-layout {
+    display: grid;
+    height: 100dvh;
+    grid-template-columns: minmax(280px, 25%) 1fr;
+    grid-template-rows: 2fr 1fr;
+    grid-template-areas: "cal chat" "dino chat";
+  }
+  .agent-layout[data-expanded="true"] {
+    grid-template-rows: 3fr 2fr;
+    grid-template-areas: "cal cal" "dino chat";
+  }
+  .agent-layout > .area-cal,
+  .agent-layout > .area-dino,
+  .agent-layout > .area-chat {
+    height: auto;
+    min-height: 0;
+  }
+  .agent-layout .area-cal {
+    grid-area: cal;
+    view-transition-name: agent-cal;
+  }
+  .agent-layout .area-dino {
+    grid-area: dino;
+    view-transition-name: agent-dino;
+  }
+  .agent-layout .area-chat {
+    grid-area: chat;
+    view-transition-name: agent-chat;
+  }
+}
+@media (min-width: 1280px) {
+  .agent-layout {
+    grid-template-columns: minmax(280px, 23%) 1fr minmax(290px, 22%);
+    grid-template-areas: "cal chat side" "dino chat side";
+  }
+  .agent-layout[data-expanded="true"] {
+    grid-template-areas: "cal cal side" "dino chat side";
+  }
+  .agent-layout > .area-side {
+    display: block;
+    grid-area: side;
+    min-height: 0;
+    view-transition-name: agent-side;
+  }
+  .wallet-pills {
+    display: none !important;
+  }
+}
+
+@keyframes drawer-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
