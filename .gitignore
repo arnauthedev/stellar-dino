@@ -45,3 +45,6 @@ supabase/.temp/
 
 # stellar cli local config (contains secrets)
 .stellar-cli/
+
+# rust build output
+contracts/target/

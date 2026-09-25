@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:contracts": "cd contracts && cargo test",
+    "test:testnet": "tsx --conditions=react-server --env-file=.env.local scripts/e2e-testnet.ts"
   },
   "dependencies": {
     "@stellar/stellar-sdk": "^17.1.0",
@@ -26,6 +28,7 @@
     "eslint-config-next": "16.3.6",
     "supabase": "^2.117.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vercel": "^60.0.1"
   }

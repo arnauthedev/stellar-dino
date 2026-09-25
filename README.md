@@ -28,22 +28,47 @@ git push           # push to main = production deploy on Vercel
                    # push another branch = preview deploy with its own URL
 ```
 
+## Contracts (Soroban, Rust)
+
+`contracts/` is a Cargo workspace (soroban-sdk 26.1, OpenZeppelin `stellar-accounts` 0.7.2):
+
+| Crate | What it does |
+|---|---|
+| `shop-recycling` | Products with a sustainable flag, bottle counting, fixed recycling credit, government subsidy pool. At checkout the user pays price minus credit and the pool pays the credit, in one transaction. |
+| `airline` | Ticket sales with 20% held in the contract; the oracle reports on time (hold released to the airline) or delayed (hold refunded to the passenger). |
+| `museum` | Timed slots, paid booking, free reschedule. |
+| `smart-wallet` | The user's OpenZeppelin smart account. Rule 0 = owner (user key, can change settings). Rules 1-4 = agent key, scoped to USDC transfers (with the spending-limit policy) and to the shop, airline and museum. The agent cannot change or bypass the limit. |
+| `spending-limit-policy`, `ed25519-verifier` | OpenZeppelin example contracts used by the wallet. |
+| `notes` | Helper that builds the readable `note` string in every event. |
+
+The demo "USDC" is a Stellar asset issued by the `issuer` account and used through its Stellar Asset Contract.
+Soroban transactions cannot carry memos, so the readable labels (e.g. "subsidy_paid: 0.50 USDC by Government for product Bamboo bottle") are in each contract event's `note`, which stellar.expert shows on the transaction.
+
+```bash
+npm run test:contracts     # Rust unit tests
+./scripts/deploy-contracts.sh   # redeploy contracts + demo data with the current accounts
+npm run test:testnet       # runs the whole demo against testnet via lib/stellar.ts, then resets it
+```
+
+`lib/stellar.ts` is the shared interface used by the app and the agent. Functions that move money return `{ txHash, explorerUrl, result }`.
+
 ## Stellar testnet reset
 
 Testnet is wiped periodically. To regenerate and re-fund every actor account
 (user, government, recycler, shop, airline, museum, oracle):
 
 ```bash
-./scripts/reset-testnet.sh
+./scripts/reset-testnet.sh --vercel
 ```
 
 The script:
-- creates new keys and funds them with Friendbot (testnet only),
+- creates new keys for all actors (plus `issuer` for the demo USDC and `agent` for Dino) and funds them with Friendbot (testnet only),
 - replaces the `STELLAR_*_SECRET` lines in `.env.local` (the previous file is kept as `.env.local.bak`),
-- rewrites `config/actors.ts` with the new public addresses.
+- rewrites `config/actors.ts`, then redeploys all contracts and demo data and rewrites `config/contracts.ts`,
+- with `--vercel`, uploads the new `STELLAR_*` secrets to Vercel.
 
-Afterwards, commit `config/actors.ts` and re-upload the new secrets to Vercel
-(`npx vercel env add STELLAR_USER_SECRET production --force`, etc., for production, preview and development).
+Afterwards, commit `config/actors.ts` and `config/contracts.ts` and push (this deploys).
+To reset only the demo state (not the accounts), use `resetDemo()` from `lib/stellar.ts` (the control panel button).
 
 ## Where secrets live
 
@@ -62,4 +87,6 @@ Never commit `.env*`, `.stellar-cli/`, `docs/` or `dino-game/`.
 - `lib/supabase/client.ts`: browser client (publishable key)
 - `lib/supabase/server.ts`: server-only client (secret key)
 - `config/actors.ts`: public testnet addresses
+- `config/contracts.ts`: public contract IDs
+- `lib/stellar.ts`: shared Stellar interface; `lib/stellar/core.ts`: transactions + smart-wallet signing
 - `app/health`: checks for Supabase, OpenAI and actor balances

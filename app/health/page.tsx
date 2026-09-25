@@ -1,4 +1,6 @@
 import { ACTORS, EXPLORER_URL, HORIZON_URL } from "@/config/actors";
+import { CONTRACTS, USDC } from "@/config/contracts";
+import { getBalances, getSpendingLimit } from "@/lib/stellar";
 import { pingAI } from "@/lib/ai";
 import { getServerSupabase } from "@/lib/supabase/server";
 
@@ -12,6 +14,15 @@ async function checkSupabase(): Promise<Check> {
     return error ? { ok: false, detail: error.message } : { ok: true, detail: "connected" };
   } catch (err) {
     return { ok: false, detail: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+async function checkContracts() {
+  try {
+    const [balances, limit] = await Promise.all([getBalances(), getSpendingLimit()]);
+    return { ok: true as const, wallet: balances.wallet.usdc, pool: balances.pool, limit };
+  } catch (err) {
+    return { ok: false as const, detail: err instanceof Error ? err.message : String(err) };
   }
 }
 
@@ -36,9 +47,10 @@ function Status({ ok }: { ok: boolean }) {
 
 export default async function HealthPage() {
   const actors = Object.entries(ACTORS);
-  const [supabase, ai, balances] = await Promise.all([
+  const [supabase, ai, contracts, balances] = await Promise.all([
     checkSupabase(),
     pingAI(),
+    checkContracts(),
     Promise.all(actors.map(([, address]) => xlmBalance(address))),
   ]);
 
@@ -54,6 +66,29 @@ export default async function HealthPage() {
           OpenAI ({process.env.AI_MODEL}): <Status ok={ai.ok} />{" "}
           <span className="text-gray-500">{ai.detail}</span>
         </p>
+      </section>
+
+      <h2 className="mb-2 text-lg font-bold">Contracts</h2>
+      <section className="mb-6 space-y-1">
+        <p>
+          Contracts: <Status ok={contracts.ok} />{" "}
+          {contracts.ok ? (
+            <span className="text-gray-500">
+              wallet {contracts.wallet} USDC · recycling pool {contracts.pool} USDC · limit {contracts.limit.spent}/
+              {contracts.limit.limit} USDC per {contracts.limit.periodHours} h
+            </span>
+          ) : (
+            <span className="text-gray-500">{contracts.detail}</span>
+          )}
+        </p>
+        {Object.entries({ usdc: USDC.contract, ...CONTRACTS }).map(([name, id]) => (
+          <p key={name} className="break-all">
+            {name}:{" "}
+            <a className="underline" href={`${EXPLORER_URL}/contract/${id}`} target="_blank">
+              {id}
+            </a>
+          </p>
+        ))}
       </section>
 
       <h2 className="mb-2 text-lg font-bold">Stellar testnet actors</h2>

@@ -1,12 +1,25 @@
 #!/usr/bin/env bash
-# Regenerate + Friendbot-fund all Stellar TESTNET actor accounts.
-# - Secrets  -> .env.local (only STELLAR_*_SECRET lines are replaced/added)
-# - Addresses -> config/actors.ts (public, committed)
-# Run after a testnet reset:  ./scripts/reset-testnet.sh
-# Then re-upload env vars to Vercel (see README).
+# Regenerate + Friendbot-fund all Stellar TESTNET actor accounts, then
+# redeploy the contracts (scripts/deploy-contracts.sh).
+# - Secrets   -> .env.local (only STELLAR_*_SECRET lines are replaced/added)
+# - Addresses -> config/actors.ts, contract IDs -> config/contracts.ts (public, committed)
+#
+# Usage:  ./scripts/reset-testnet.sh [--keys-only] [--vercel]
+#   --keys-only  only regenerate accounts, skip contract deployment
+#   --vercel     also upload the new STELLAR_* secrets to Vercel
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+
+KEYS_ONLY=0
+VERCEL=0
+for arg in "$@"; do
+  case "$arg" in
+    --keys-only) KEYS_ONLY=1 ;;
+    --vercel) VERCEL=1 ;;
+    *) echo "unknown option: $arg"; exit 1 ;;
+  esac
+done
 
 NETWORK="testnet" # TESTNET ONLY. Never change this to mainnet.
 CONFIG_DIR=".stellar-cli" # project-local Stellar CLI config (git-ignored)
@@ -21,6 +34,8 @@ ACTORS=(
   "airline:AIRLINE"
   "museum:MUSEUM"
   "oracle:ORACLE"
+  "issuer:ISSUER" # issues the demo USDC
+  "agent:AGENT"   # Dino's signing key for the user's smart wallet (spending-limited)
 )
 
 command -v stellar >/dev/null || { echo "stellar CLI not found"; exit 1; }
@@ -73,4 +88,12 @@ $(printf "%b" "$ts_entries")} as const;
 export type ActorName = keyof typeof ACTORS;
 EOF
 
-echo "Done. Updated $ENV_FILE (backup: $ENV_FILE.bak) and config/actors.ts"
+echo "Accounts done. Updated $ENV_FILE (backup: $ENV_FILE.bak) and config/actors.ts"
+
+if [ "$KEYS_ONLY" = 0 ]; then
+  ./scripts/deploy-contracts.sh
+fi
+
+if [ "$VERCEL" = 1 ]; then
+  node scripts/push-env-to-vercel.mjs STELLAR_
+fi
