@@ -1,26 +1,275 @@
 @import "tailwindcss";
 
+/*
+ * Stellar Dino theme, extracted from dino-game/ (Motion Dino v2).
+ * Light only, flat surfaces, pill buttons, pixel sprites, monospace numbers.
+ */
+@theme {
+  /* Surfaces */
+  --color-bg: #fafbfc; /* page + game canvas */
+  --color-surface: #ffffff; /* dialogs, cards */
+  --color-muted: #edf1f6; /* secondary button */
+  --color-muted-hover: #e1e7f0;
+  --color-chip: #e9edf2; /* segments, pills */
+  --color-field: #f1f4f7; /* inputs */
+  --color-well: #edf0f3; /* camera panel, inset areas */
+  --color-line: #e3e8ee; /* hairline borders */
+  --color-ground: #d5dbe1; /* game ground line */
+  --color-cloud: #eef0f3;
+
+  /* Text */
+  --color-ink: #29313b; /* body text */
+  --color-ink-strong: #28323d;
+  --color-ink-soft: #485667; /* button text */
+  --color-subtle: #7b8795; /* labels */
+  --color-faint: #a2a8b0; /* best score, hints */
+
+  /* Actions */
+  --color-primary: #293644;
+  --color-primary-hover: #40516a;
+  --color-accent: #4585eb; /* focus, progress */
+  --color-accent-soft: #e2ebfa;
+  --color-accent-ink: #3d76c9;
+
+  /* Pixel sprites + game player colours */
+  --color-dino: #343b43;
+  --color-cactus: #68727c;
+  --color-dead: #a3aab2;
+  --color-p-blue: #4876bb;
+  --color-p-plum: #9a6583;
+  --color-p-sand: #8d714c;
+  --color-p-teal: #507b74;
+  --color-p-violet: #6e68a0;
+
+  /* Semantic */
+  --color-good: #507b74; /* sustainable, on time */
+  --color-good-soft: #e3efec;
+  --color-warn: #8d714c; /* held funds, delays */
+  --color-warn-soft: #f3ede4;
+  --color-bad: #b0505a;
+  --color-bad-soft: #f7e6e8;
+
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-ctl: 12px; /* buttons, inputs */
+  --radius-card: 24px; /* dialogs, panels */
+
+  --shadow-soft: 0 1px 4px #25344b0b;
+  --shadow-float: 0 5px 30px #23334b1c;
+  --shadow-dialog: 0 24px 90px #26354422;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: light;
+  font-synthesis: none;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: wait;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+}
+
+@layer components {
+  /* Headings: light weight, tight tracking like the game's overlay */
+  .title {
+    font-weight: 450;
+    letter-spacing: -0.055em;
+    line-height: 1.2;
+  }
+  .label {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #8a919a;
+  }
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 12px 18px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: var(--color-muted);
+    color: var(--color-ink-soft);
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.15s;
+  }
+  .btn:hover {
+    background: var(--color-muted-hover);
+  }
+  .btn-primary {
+    background: var(--color-primary);
+    color: #fff;
+  }
+  .btn-primary:hover {
+    background: var(--color-primary-hover);
+  }
+  .btn-pill {
+    border-radius: 100px;
+    background: var(--color-chip);
+    color: #444e5b;
+  }
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex: none;
+    border: 0;
+    border-radius: 50%;
+    background: #f0f3f6e8;
+    backdrop-filter: blur(12px);
+    color: #626e7c;
+    transition: background 0.15s;
+  }
+  .icon-btn:hover {
+    background: #e2e8ef;
+    color: #263444;
+  }
+  .icon-btn[aria-pressed="true"] {
+    background: var(--color-accent-soft);
+    color: var(--color-accent-ink);
+  }
+
+  /* Segmented control */
+  .segments {
+    display: inline-flex;
+    gap: 2px;
+    padding: 4px;
+    border-radius: 100px;
+    background: var(--color-chip);
+  }
+  .segment {
+    border: 0;
+    background: transparent;
+    color: #87909b;
+    border-radius: 100px;
+    min-height: 36px;
+    padding: 8px 19px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .segment[aria-selected="true"] {
+    color: var(--color-ink-strong);
+    background: #fff;
+    box-shadow: var(--shadow-soft);
+  }
+
+  /* Surfaces */
+  .panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+  }
+  .card {
+    background: var(--color-surface);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-float);
+  }
+  .field {
+    width: 100%;
+    min-width: 0;
+    background: var(--color-field);
+    color: var(--color-ink);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    padding: 12px;
+  }
+  .field::placeholder {
+    color: #a8b1bd;
+  }
+
+  /* Pills and badges */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    padding: 0 13px;
+    border-radius: 100px;
+    background: #f5f7fae8;
+    color: #586573;
+    font-size: 13px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--color-chip);
+    color: #586573;
+  }
+  .badge-good {
+    background: var(--color-good-soft);
+    color: var(--color-good);
+  }
+  .badge-warn {
+    background: var(--color-warn-soft);
+    color: var(--color-warn);
+  }
+  .badge-bad {
+    background: var(--color-bad-soft);
+    color: var(--color-bad);
+  }
+
+  /* Toast (same as the game's) */
+  .toast {
+    padding: 14px 20px;
+    background: #fff;
+    color: #445164;
+    border-radius: 100px;
+    box-shadow: var(--shadow-float);
+    font-size: 14px;
+  }
+
+  .pixelated {
+    image-rendering: pixelated;
+    shape-rendering: crispEdges;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }
