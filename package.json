@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test:contracts": "cd contracts && cargo test",
     "test:testnet": "tsx --conditions=react-server --env-file=.env.local scripts/e2e-testnet.ts",
-    "build:game": "npm --prefix dino-game ci --omit=dev && npm --prefix dino-game run build && rm -rf public/game && cp -R dino-game/dist public/game"
+    "build:game": "npm --prefix dino-game ci --omit=dev && npm --prefix dino-game run build && rm -rf public/game && mkdir -p public && cp -R dino-game/dist public/game"
   },
   "dependencies": {
     "@stellar/stellar-sdk": "^17.1.0",
