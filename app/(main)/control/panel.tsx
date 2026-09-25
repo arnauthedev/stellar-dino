@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import type { Flight } from "@/lib/stellar";
-import { delayFlightAction, onTimeAction, resetDemoAction, resetGameAction, type ActionResult } from "./actions";
+import { delayFlightAction, onTimeAction, reportFollowUpAction, resetDemoAction, resetGameAction, type ActionResult } from "./actions";
 
 type LogEntry = ActionResult & { at: string };
 
@@ -86,10 +86,13 @@ export function ControlPanel({ flights, bookedFlight }: { flights: Flight[]; boo
           <button className="btn" disabled={!!busy} onClick={() => act("game", resetGameAction)}>
             {busy === "game" ? "Resetting…" : "Reset game"}
           </button>
+          <button className="btn" disabled={!!busy} onClick={() => act("followup", reportFollowUpAction)}>
+            {busy === "followup" ? "Sending…" : "Street report follow-up"}
+          </button>
         </div>
         <p className="text-sm text-subtle">
           Reset demo: flights back to scheduled, bookings and credit cleared, spending history cleared, wallet back to
-          500 USDC and pool to 100 USDC. Reset game: removes all players and changes the join code.
+          500 USDC and pool to 100 USDC. Reset game: removes all players and changes the join code. Street report follow-up: Dino asks whether the latest reported problem was fixed.
         </p>
         <div>
           <div className="label mb-2">Log</div>

@@ -21,6 +21,7 @@ How to act:
 - Buying something at the shop: propose_product. Only the museum: propose_museum.
 - If the user rejects a proposal (EVENT says so), propose the next best alternative, or ask what they prefer.
 - When the user has recycling credit, or asks about it, say which products it applies to (sustainable ones) and show them (show_options products).
+- If the user wants to report a problem in the street (Lisbon), call open_report and say you're opening the report form: they take a photo and you prepare the report in Portuguese for Na Minha Rua LX.
 - If the user asks for a game, some exercise, a sport or something active to do indoors, call open_game and say you're opening the Motion Dino game.
 
 Events: a developer message starting with "EVENT:" is a system fact, not the user speaking. For a flight delay: call my_trip, and if a museum booking exists and is earlier than earliest_museum_time, call museum_slots with after=earliest_museum_time and reschedule_museum to the first free slot (this is free, do it without asking). Then post one short message like "Your flight is 2 h late, so I moved the museum to 17:00."`;
@@ -28,7 +29,7 @@ Events: a developer message starting with "EVENT:" is a system fact, not the use
 export type DinoReply = {
   reply: string;
   links: { label: string; href: string }[];
-  actions: { type: "open_game" }[];
+  actions: { type: "open_game" | "open_report" }[];
   mood?: "happy";
   card: Card | null;
   calls: AiToolCall[];
@@ -43,7 +44,7 @@ export async function askDino(messages: AiMessage[]): Promise<DinoReply> {
   const links = calls
     .filter((c) => LINK_LABELS[c.name] && c.result && typeof (c.result as { explorerUrl?: string }).explorerUrl === "string")
     .map((c) => ({ label: LINK_LABELS[c.name], href: (c.result as { explorerUrl: string }).explorerUrl }));
-  const actions = calls.some((c) => c.name === "open_game") ? [{ type: "open_game" as const }] : [];
+  const actions = (["open_game", "open_report"] as const).filter((a) => calls.some((c) => c.name === a)).map((type) => ({ type }));
   const mood = links.length > 0 ? ("happy" as const) : undefined;
   const card = await cardFromCalls(calls).catch(() => null);
   return { reply: text.trim(), links, actions, mood, card, calls };

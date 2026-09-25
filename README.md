@@ -7,6 +7,20 @@ Next.js (App Router, TypeScript, Tailwind) · Supabase · OpenAI · Stellar test
 - Production: https://stellar-dino.vercel.app
 - Health check: `/health`
 
+## Demo tabs
+
+Open these in separate tabs (they are separate entities; there is no top bar):
+
+| Tab | What it is |
+|---|---|
+| `/agent` | Dino: calendar, companion (click it for history, incident report, food, profile) and chat. Proposals appear as cards with Accept / Reject. |
+| `/recycle-machine` | Recycling machine: one-time QR, phone shows "Bottle recycled". |
+| `/shop` | Airport shop counter: pick a product, the phone scans the QR and pays (`/pay`). |
+| `/actors` | Live balances and latest transactions of every actor. |
+| `/control` | Hidden demo panel: delay flight, on time, reset demo, reset game. |
+
+`/play` (the Motion Dino game) opens when you ask Dino for a game, sport or indoor activity.
+
 ## Setup (new machine)
 
 Requirements: Node LTS, git, GitHub CLI (`gh`), Stellar CLI, Rust + `wasm32v1-none` target.
@@ -80,6 +94,21 @@ it to Dino as an event and Dino reschedules the museum and posts about it.
 
 ```bash
 npm run test:agent   # resets the demo and runs the full conversation (real model + testnet)
+```
+
+## Street problem reports (Na Minha Rua LX, mock)
+
+Companion → "Report incident", or tell Dino about a street problem. Take/upload a photo; the location
+comes from EXIF GPS → device location → typed address / map pin. The vision model (`VISION_MODEL`,
+default `gpt-5.6-luna`, via `lib/ai.ts`) writes a pt-PT report (category, description, severity);
+Nominatim gives address + freguesia and checks it is in Lisbon; duplicates within 30 m are flagged.
+Submit is a **mock** (reference `LX-2026-NNNNNN`, nothing is sent to the real portal); the report's
+fingerprint is anchored on Stellar (classic tx with memo + manageData) and the Government pays a
+0.50 USDC civic reward. `/control` → "Street report follow-up" makes Dino ask if it was fixed.
+Code: `lib/report/`, `app/api/report/`, `components/report/`. Test photos: `test-photos/`.
+
+```bash
+npx tsx --conditions=react-server --env-file=.env.local scripts/report-demo.ts   # ~30 s end to end
 ```
 
 ## Motion Dino game

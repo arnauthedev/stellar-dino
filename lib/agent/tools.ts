@@ -192,6 +192,13 @@ export const dinoTools: AiTool[] = [
     run: async ({ product_id }) => ({ proposed: true, product_id }),
   },
   {
+    name: "open_report",
+    description:
+      "Open the street-problem report form (Lisbon 'Na Minha Rua LX'): the user takes a photo of a problem in public space (broken sidewalk, overflowing bin, dead streetlight...) and the app turns it into a report. Use it when the user wants to report or complain about a problem in the street.",
+    parameters: obj(),
+    run: async () => ({ opened: true }),
+  },
+  {
     name: "open_game",
     description:
       "Open the Motion Dino game (body-controlled Dino runner played with jumps or squats in front of the camera). Use it when the user asks for a game, some exercise or sport, or something active to do indoors.",

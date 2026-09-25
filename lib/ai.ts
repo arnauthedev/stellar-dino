@@ -107,6 +107,48 @@ function safeJson(s: string): Record<string, unknown> {
   }
 }
 
+/* ---------- Vision (street reports) ---------- */
+
+/** One image + text in, strict JSON (by schema) out. Returns the raw parsed JSON and token usage. */
+export async function analyzeImageJson(opts: {
+  instructions: string;
+  text: string;
+  imageDataUrl: string;
+  schemaName: string;
+  schema: Record<string, unknown>;
+}): Promise<{ json: unknown; model: string; tokensIn: number; tokensOut: number }> {
+  const model = process.env.VISION_MODEL || "gpt-5.6-luna";
+  const res = await getClient().responses.create({
+    model,
+    reasoning: { effort: aiReasoningEffort() },
+    instructions: opts.instructions,
+    input: [
+      {
+        role: "user",
+        content: [
+          { type: "input_text", text: opts.text },
+          { type: "input_image", image_url: opts.imageDataUrl, detail: "auto" },
+        ],
+      },
+    ],
+    text: { format: { type: "json_schema", name: opts.schemaName, schema: opts.schema, strict: true } },
+  });
+  const tokensIn = res.usage?.input_tokens ?? 0;
+  const tokensOut = res.usage?.output_tokens ?? 0;
+  console.info(`[vision] model=${model} tokens_in=${tokensIn} tokens_out=${tokensOut}`);
+  const refusal = res.output
+    .flatMap((o) => (o.type === "message" ? o.content : []))
+    .find((c) => c.type === "refusal");
+  if (refusal) throw new Error("The model declined to analyse this photo.");
+  let json: unknown;
+  try {
+    json = JSON.parse(res.output_text);
+  } catch {
+    throw new Error("The model returned an unreadable answer.");
+  }
+  return { json, model, tokensIn, tokensOut };
+}
+
 /** Tiny round-trip used by /health. */
 export async function pingAI(): Promise<{ ok: boolean; detail: string }> {
   try {

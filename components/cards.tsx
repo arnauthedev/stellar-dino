@@ -221,3 +221,39 @@ function ProductBlock({ p, credit, big }: { p: ProductOption; credit: number; bi
     </div>
   );
 }
+
+export type FollowUp = { id: string; reference: string; problem_short: string; address: string };
+
+/** Dino asks whether a reported street problem was fixed. */
+export function FollowUpCard({
+  followUp,
+  onAnswer,
+}: {
+  followUp: FollowUp;
+  onAnswer: (status: "resolved" | "badly_resolved" | null) => void;
+}) {
+  return (
+    <div className="card w-full max-w-md overflow-hidden animate-[pop-in_.22s_ease-out]">
+      <div className="border-b border-line px-6 py-4">
+        <span className="label">Na Minha Rua LX · {followUp.reference}</span>
+      </div>
+      <div className="space-y-2 px-6 py-5">
+        <p className="title text-2xl">Was it fixed?</p>
+        <p className="text-sm text-subtle">
+          You reported <b className="font-medium text-ink">{followUp.problem_short}</b> at {followUp.address}. Is it resolved now?
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2 border-t border-line px-6 py-4">
+        <button className="btn" onClick={() => onAnswer(null)}>
+          Not yet
+        </button>
+        <button className="btn" onClick={() => onAnswer("badly_resolved")}>
+          Badly fixed
+        </button>
+        <button className="btn btn-primary flex-1" onClick={() => onAnswer("resolved")}>
+          Yes, fixed
+        </button>
+      </div>
+    </div>
+  );
+}

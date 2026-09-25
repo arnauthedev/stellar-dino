@@ -1,17 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { CardView, type CardAction } from "@/components/cards";
+import { CardView, FollowUpCard, type CardAction, type FollowUp } from "@/components/cards";
 import { Chat, type ChatMessage } from "@/components/chat";
 import { Companion, CompanionProvider, useCompanion, type CompanionOption } from "@/components/companion";
-import { HistoryDialog, IncidentDialog, ProfileDialog } from "@/components/companion-dialogs";
+import { HistoryDialog, ProfileDialog } from "@/components/companion-dialogs";
+import { ReportSheet } from "@/components/report/report-sheet";
 import { DayCalendar, WeekCalendar } from "@/components/day-calendar";
 import { useChainEvents } from "@/components/live";
 import type { AgentState } from "@/lib/agent-state";
 import type { Card } from "@/lib/agent/cards";
+import type { SubmittedReport } from "@/lib/report/types";
 import type { HistoryRow } from "@/lib/stellar";
+import { getBrowserSupabase } from "@/lib/supabase/client";
 
 const expandIcon = "M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7";
 const collapseIcon = "M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7";
@@ -45,6 +48,7 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
   const [busy, setBusy] = useState(false);
   const [card, setCard] = useState<Card | null>(null);
   const [paying, setPaying] = useState(false);
+  const [followUp, setFollowUp] = useState<FollowUp | null>(null);
   const { react } = useCompanion();
   const router = useRouter();
   const messagesRef = useRef<ChatMessage[]>([]);
@@ -87,6 +91,7 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
         if (data.card) setCard(data.card);
         if (data.mood === "happy") react("happy");
         if (data.actions?.some((a: { type: string }) => a.type === "open_game")) setTimeout(() => router.push("/play"), 1200);
+        if (data.actions?.some((a: { type: string }) => a.type === "open_report")) setTimeout(() => setDialog("incident"), 600);
         if (data.links?.length) refresh();
       } catch {
         say("I couldn't reach the server. Try again?");
@@ -139,6 +144,45 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
     } finally {
       setPaying(false);
     }
+  };
+
+  // Street report follow-up (triggered from /control for the demo).
+  useEffect(() => {
+    const channel = getBrowserSupabase()
+      .channel("reports")
+      .on("broadcast", { event: "followup" }, ({ payload }) => {
+        setFollowUp(payload as FollowUp);
+        react("jump", "Quick question!");
+      })
+      .subscribe();
+    return () => void getBrowserSupabase().removeChannel(channel);
+  }, [react]);
+
+  const answerFollowUp = async (status: "resolved" | "badly_resolved" | null) => {
+    const f = followUp;
+    setFollowUp(null);
+    if (!f || !status) return;
+    await fetch(`/api/report/${f.id}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    }).catch(() => undefined);
+    say(
+      status === "resolved"
+        ? `Great, I marked ${f.reference} as resolved. Thanks for helping keep Lisbon tidy!`
+        : `Sorry to hear that. I marked ${f.reference} as badly resolved so it can be reopened.`,
+    );
+    if (status === "resolved") react("happy");
+  };
+
+  const onReportSubmitted = (r: SubmittedReport) => {
+    const links = [
+      r.anchor_url && { label: "Report fingerprint", href: r.anchor_url },
+      r.reward_url && { label: "Civic reward", href: r.reward_url },
+    ].filter(Boolean) as { label: string; href: string }[];
+    say(`Report ${r.reference} sent to Na Minha Rua LX (demo). I'll check back on it${r.reward_url ? ", and the Government sent you 0.50 USDC as a thank-you" : ""}.`, links);
+    react("happy");
+    refresh();
   };
 
   useChainEvents((rows: HistoryRow[]) => {
@@ -206,12 +250,18 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
             ask({ text });
           }}
           busy={busy}
-          overlay={card ? <CardView card={card} busy={paying} onAction={onCard} onClose={() => setCard(null)} /> : null}
+          overlay={
+            followUp ? (
+              <FollowUpCard followUp={followUp} onAnswer={answerFollowUp} />
+            ) : card ? (
+              <CardView card={card} busy={paying} onAction={onCard} onClose={() => setCard(null)} />
+            ) : null
+          }
         />
       </section>
 
       <HistoryDialog open={dialog === "history"} onClose={() => setDialog(null)} />
-      <IncidentDialog open={dialog === "incident"} onClose={() => setDialog(null)} />
+      <ReportSheet open={dialog === "incident"} onClose={() => setDialog(null)} onSubmitted={onReportSubmitted} />
       <ProfileDialog open={dialog === "profile"} onClose={() => setDialog(null)} state={state} wallet={wallet} onChanged={refresh} />
     </div>
   );

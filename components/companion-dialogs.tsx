@@ -31,14 +31,6 @@ export function HistoryDialog({ open, onClose }: { open: boolean; onClose: () =>
   );
 }
 
-export function IncidentDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  return (
-    <Dialog open={open} onClose={onClose} title="Report an incident">
-      <p className="text-sm text-subtle">Coming soon. Incident reporting is still being defined.</p>
-    </Dialog>
-  );
-}
-
 export function ProfileDialog({
   open,
   onClose,

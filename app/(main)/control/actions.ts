@@ -2,6 +2,7 @@
 
 import { markDemoReset } from "@/lib/demo";
 import { resetGame } from "@/lib/game";
+import { triggerFollowUp } from "@/lib/report/followup";
 import { reportFlightStatus, resetDemo } from "@/lib/stellar";
 
 export type ActionResult = { ok: boolean; message: string; explorerUrl?: string };
@@ -38,4 +39,13 @@ export async function resetDemoAction(): Promise<ActionResult> {
 
 export async function resetGameAction(): Promise<ActionResult> {
   return run(async () => ({ ok: true, message: `Game reset. New join code ${await resetGame()}.` }));
+}
+
+export async function reportFollowUpAction(): Promise<ActionResult> {
+  return run(async () => {
+    const r = await triggerFollowUp();
+    return r
+      ? { ok: true, message: `Follow-up sent for ${r.reference}: Dino asks if it was fixed.` }
+      : { ok: false, message: "No submitted street report yet." };
+  });
 }
