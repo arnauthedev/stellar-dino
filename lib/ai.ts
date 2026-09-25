@@ -36,6 +36,77 @@ export async function generateText(opts: {
   return res.output_text;
 }
 
+/* ---------- Tool-using agent loop (provider-agnostic interface) ---------- */
+
+export type AiTool = {
+  name: string;
+  description: string;
+  /** JSON schema of the arguments. */
+  parameters: Record<string, unknown>;
+  run: (args: Record<string, unknown>) => Promise<unknown>;
+};
+
+export type AiMessage = { role: "user" | "assistant" | "developer"; content: string };
+
+export type AiToolCall = { name: string; args: Record<string, unknown>; result?: unknown; error?: string };
+
+/** Run the model with tools until it answers in text (or maxSteps is reached). */
+export async function runAgent(opts: {
+  instructions: string;
+  messages: AiMessage[];
+  tools: AiTool[];
+  maxSteps?: number;
+}): Promise<{ text: string; calls: AiToolCall[] }> {
+  const tools = opts.tools.map((t) => ({
+    type: "function" as const,
+    name: t.name,
+    description: t.description,
+    parameters: t.parameters,
+    strict: false,
+  }));
+  const byName = new Map(opts.tools.map((t) => [t.name, t]));
+  const input: OpenAI.Responses.ResponseInput = opts.messages.map((m) => ({ role: m.role, content: m.content }));
+  const calls: AiToolCall[] = [];
+
+  for (let step = 0; step < (opts.maxSteps ?? 10); step++) {
+    const res = await getClient().responses.create({
+      model: aiModel(),
+      reasoning: { effort: aiReasoningEffort() },
+      instructions: opts.instructions,
+      input,
+      tools,
+    });
+    const fnCalls = res.output.filter((o): o is OpenAI.Responses.ResponseFunctionToolCall => o.type === "function_call");
+    if (fnCalls.length === 0) return { text: res.output_text, calls };
+
+    input.push(...(res.output as OpenAI.Responses.ResponseInputItem[]));
+    for (const call of fnCalls) {
+      const tool = byName.get(call.name);
+      const args = safeJson(call.arguments);
+      let output: unknown;
+      try {
+        if (!tool) throw new Error(`Unknown tool ${call.name}`);
+        output = await tool.run(args);
+        calls.push({ name: call.name, args, result: output });
+      } catch (err) {
+        const error = err instanceof Error ? err.message : String(err);
+        output = { error };
+        calls.push({ name: call.name, args, error });
+      }
+      input.push({ type: "function_call_output", call_id: call.call_id, output: JSON.stringify(output) });
+    }
+  }
+  return { text: "Sorry, that took too many steps. Could you try again?", calls };
+}
+
+function safeJson(s: string): Record<string, unknown> {
+  try {
+    return JSON.parse(s || "{}");
+  } catch {
+    return {};
+  }
+}
+
 /** Tiny round-trip used by /health. */
 export async function pingAI(): Promise<{ ok: boolean; detail: string }> {
   try {

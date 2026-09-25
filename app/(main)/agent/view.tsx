@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Chat, type ChatMessage } from "@/components/chat";
 import { Companion, CompanionProvider, useCompanion, type CompanionOption } from "@/components/companion";
@@ -29,19 +30,15 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [busy, setBusy] = useState(false);
   const { react } = useCompanion();
+  const router = useRouter();
+  const messagesRef = useRef<ChatMessage[]>([]);
+  const queue = useRef<Promise<void>>(Promise.resolve());
+  const handledEvents = useRef(new Set<string>());
 
   const refresh = useCallback(async () => {
     const res = await fetch("/api/agent/state", { cache: "no-store" });
     if (res.ok) setState(await res.json());
   }, []);
-
-  useChainEvents((rows: HistoryRow[]) => {
-    const mine = rows.filter((r) => r.user === wallet);
-    if (mine.some((r) => r.kind === "delay_refund")) react("happy", "Refund received!");
-    else if (mine.some((r) => r.kind === "bottle_recycled")) react("jump", "+0.50 credit");
-    else if (mine.length) react("jump");
-    if (rows.length) refresh();
-  });
 
   const toggleExpanded = () => {
     const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
@@ -49,24 +46,54 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
     else setExpanded((e) => !e);
   };
 
-  const send = async (text: string) => {
-    const next: ChatMessage[] = [...messages, { role: "user", content: text }];
+  const setChat = (next: ChatMessage[]) => {
+    messagesRef.current = next;
     setMessages(next);
-    setBusy(true);
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next }),
-      });
-      const data = await res.json();
-      setMessages([...next, { role: "assistant", content: data.reply ?? data.error ?? "Sorry, something went wrong.", links: data.links }]);
-    } catch {
-      setMessages([...next, { role: "assistant", content: "I couldn't reach the server. Try again?" }]);
-    } finally {
-      setBusy(false);
-    }
   };
+
+  /** One request to Dino at a time (user messages and chain events are queued). */
+  const ask = (input: { text?: string; event?: string }) => {
+    queue.current = queue.current.then(async () => {
+      const history = input.text ? [...messagesRef.current, { role: "user" as const, content: input.text }] : messagesRef.current;
+      if (input.text) setChat(history);
+      setBusy(true);
+      if (input.event) react("think");
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: history.map(({ role, content }) => ({ role, content })), event: input.event }),
+        });
+        const data = await res.json();
+        setChat([...messagesRef.current, { role: "assistant", content: data.reply ?? "Sorry, something went wrong.", links: data.links }]);
+        if (data.mood === "happy") react("happy");
+        if (data.actions?.some((a: { type: string }) => a.type === "open_game")) setTimeout(() => router.push("/play"), 1200);
+        if (data.links?.length) refresh();
+      } catch {
+        setChat([...messagesRef.current, { role: "assistant", content: "I couldn't reach the server. Try again?" }]);
+      } finally {
+        setBusy(false);
+      }
+    });
+  };
+
+  const send = (text: string) => ask({ text });
+
+  useChainEvents((rows: HistoryRow[]) => {
+    const mine = rows.filter((r) => r.user === wallet);
+    for (const r of mine) {
+      if (r.kind === "delay_refund" && !handledEvents.current.has(r.id)) {
+        handledEvents.current.add(r.id);
+        // Toast shows the fact; Dino acts on it (reschedules the museum) and posts in chat.
+        ask({ event: r.note });
+      }
+    }
+    if (mine.some((r) => r.kind === "delay_refund")) react("happy", "Refund received!");
+    else if (mine.some((r) => r.kind === "bottle_recycled")) react("jump", "+0.50 credit");
+    else if (mine.length) react("jump");
+    if (rows.length) refresh();
+  });
+
 
   return (
     <div className="agent-grid px-4 pb-4 sm:px-6" data-expanded={expanded}>

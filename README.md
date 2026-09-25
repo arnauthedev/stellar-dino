@@ -70,6 +70,18 @@ The script:
 Afterwards, commit `config/actors.ts` and `config/contracts.ts` and push (this deploys).
 To reset only the demo state (not the accounts), use `resetDemo()` from `lib/stellar.ts` (the control panel button).
 
+## Dino, the agent
+
+`lib/agent/dino.ts` holds Dino's persona and rules, `lib/agent/tools.ts` its tools (flights, museum,
+shop, credit, history, travel time, open game), all wrapping `lib/stellar.ts`. `lib/ai.ts` is the only
+module that talks to the model (`AI_MODEL`, `AI_REASONING_EFFORT`); if multi-step tool use slips, set
+`AI_MODEL=gpt-5.6-terra`. `/api/chat` runs it; when a `delay_refund` event arrives, the agent page sends
+it to Dino as an event and Dino reschedules the museum and posts about it.
+
+```bash
+npm run test:agent   # resets the demo and runs the full conversation (real model + testnet)
+```
+
 ## Motion Dino game
 
 `dino-game/` is the webcam Dino game (MediaPipe pose). `npm run build` first runs `npm run build:game`,

@@ -1,3 +1,5 @@
+import { SPRITES, drawSprite, BACKGROUND } from "./sprites.js";
+
 const WIDTH = 960;
 const COLORS = ["#343b43", "#4876bb", "#9a6583", "#8d714c", "#507b74", "#6e68a0"];
 
@@ -78,6 +80,7 @@ export class DinoGame {
     players.forEach((player, index) => {
       const ground = index * laneHeight + laneHeight * 0.68;
       this.drawLane(ctx, ground, index, elapsed);
+      this.drawBird(ctx, ground - laneHeight * 0.68, ground, index, now);
       if (!player.remote && this.state === "running" && player.alive) {
         player.height = Math.max(0, player.height + player.velocity * dt);
         player.velocity -= 1740 * dt;
@@ -95,7 +98,7 @@ export class DinoGame {
         }
       }
       for (const obstacle of obstacles) this.drawCactus(ctx, obstacle.x, ground, obstacle.height);
-      this.drawDino(ctx, 105, ground - player.height, COLORS[index % COLORS.length], player.alive, elapsed);
+      this.drawDino(ctx, 105, ground - player.height, COLORS[index % COLORS.length], player.alive, elapsed, player.height > 0, now + index * 1700);
       if (players.length > 1) {
         ctx.fillStyle = "#6c747e"; ctx.font = "14px ui-monospace, monospace";
         ctx.fillText(player.name || `Player ${index + 1}`, 22, ground - 65);
@@ -119,12 +122,22 @@ export class DinoGame {
   }
 
   drawSky(ctx, elapsed, height) {
-    ctx.fillStyle = "#eef0f3";
+    const cloud = SPRITES.cloud;
     for (let i = 0; i < 3; i++) {
       const x = ((i * 228 - elapsed * 12) % 1100 + 1100) % 1100 - 70;
       const y = height * 0.3 + (i % 3) * 36;
-      ctx.fillRect(x, y, 42, 7); ctx.fillRect(x + 9, y - 7, 25, 7);
+      drawSprite(ctx, cloud, x, Math.round(y - 14), 2, 2, "#dde2e7");
     }
+  }
+
+  // Decorative pterodactyl gliding slowly across the top of each lane (never collides).
+  drawBird(ctx, laneTop, ground, index, now) {
+    const t = now / 1000 + index * 7.3;
+    const span = WIDTH + 160;
+    const x = WIDTH + 40 - ((t * 38 + index * 311) % span);
+    const y = Math.max(laneTop + 4, ground - 170) + Math.round(Math.sin(t * 1.3) * 3);
+    const sprite = Math.floor(t * 4) % 2 ? SPRITES.birdDown : SPRITES.birdUp;
+    drawSprite(ctx, sprite, x, Math.round(y), 1.4, 1.4, "#b3bac2");
   }
 
   drawLane(ctx, ground, index, elapsed) {
@@ -134,21 +147,21 @@ export class DinoGame {
   }
 
   drawCactus(ctx, x, ground, height) {
-    ctx.fillStyle = "#68727c";
-    ctx.fillRect(x + 8, ground - height, 10, height);
-    ctx.fillRect(x, ground - height + 14, 8, 8);
-    ctx.fillRect(x, ground - height + 14, 5, 19);
-    ctx.fillRect(x + 18, ground - height + 8, 7, 8);
-    ctx.fillRect(x + 21, ground - height + 8, 4, 19);
+    // Scale the 13x19 bitmap to the obstacle box; the taller cactus is also a bit wider.
+    const sprite = SPRITES.cactus;
+    const sy = height / sprite.height;
+    const sx = height > 40 ? 2.2 : 2;
+    const left = x + 12 - (sprite.width * sx) / 2;
+    drawSprite(ctx, sprite, left, ground + 2 - height, sx, sy, "#68727c");
   }
 
-  drawDino(ctx, x, ground, color, alive, elapsed) {
-    ctx.fillStyle = alive ? color : "#a3aab2";
-    const bob = alive && this.state === "running" && ground % 1 === 0 ? Math.floor(elapsed * 10) % 2 : 0;
-    const y = ground - 41 + bob;
-    ctx.fillRect(x + 19, y, 28, 21); ctx.fillRect(x + 39, y + 8, 12, 7);
-    ctx.fillRect(x + 8, y + 18, 31, 19); ctx.fillRect(x + 1, y + 25, 15, 8);
-    ctx.fillRect(x + 16, y + 36, 7, 7); ctx.fillRect(x + 32, y + 36, 7, 7);
-    ctx.fillStyle = "#fafbfc"; ctx.fillRect(x + 36, y + 6, 4, 4);
+  drawDino(ctx, x, ground, color, alive, elapsed, airborne, now) {
+    // 20x21 bitmap at 2.2x = 44x46 px, feet resting on the ground line (ground + 2).
+    const scale = 2.2;
+    const running = alive && this.state === "running" && !airborne;
+    const pose = running ? (Math.floor(elapsed * 10) % 2 ? "walkB" : "walkA") : "stand";
+    const blink = alive && this.state !== "running" && now % 3600 < 140;
+    const sprite = (blink ? SPRITES.dinoBlink : SPRITES.dino)[pose];
+    drawSprite(ctx, sprite, x, Math.round(ground + 2 - sprite.height * scale), scale, scale, alive ? color : "#a3aab2", BACKGROUND);
   }
 }
