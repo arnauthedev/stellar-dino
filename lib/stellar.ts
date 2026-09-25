@@ -473,14 +473,14 @@ function toRow(e: rpc.Api.EventResponse): HistoryRow | null {
  * plus public ones (pool funding); "all" keeps everything.
  */
 export async function getHistory(
-  opts: { cursor?: string; scope?: "user" | "all" } = {},
+  opts: { cursor?: string; scope?: "user" | "all"; sinceLedger?: number } = {},
 ): Promise<{ rows: HistoryRow[]; cursor: string }> {
   const filters: rpc.Api.EventFilter[] = [
     { type: "contract", contractIds: [CONTRACTS.shop, CONTRACTS.airline, CONTRACTS.museum] },
   ];
   const rows: HistoryRow[] = [];
   let cursor = opts.cursor;
-  let startLedger: number | undefined = cursor ? undefined : START_LEDGER;
+  let startLedger: number | undefined = cursor ? undefined : Math.max(START_LEDGER, opts.sinceLedger ?? 0);
 
   for (let page = 0; page < 20; page++) {
     let res: rpc.Api.GetEventsResponse;
@@ -509,6 +509,20 @@ export async function getHistory(
   const filtered =
     scope === "all" ? rows : rows.filter((r) => r.user === WALLET || r.kind === "pool_funded");
   return { rows: filtered, cursor: cursor ?? "" };
+}
+
+/**
+ * Live polling: without a cursor, starts at the latest ledger (no replay);
+ * with a cursor, returns only events after it. Used every ~3 s by the UI.
+ */
+export async function pollEvents(cursor?: string): Promise<{ rows: HistoryRow[]; cursor: string }> {
+  if (cursor) return getHistory({ cursor, scope: "all" });
+  const filters: rpc.Api.EventFilter[] = [
+    { type: "contract", contractIds: [CONTRACTS.shop, CONTRACTS.airline, CONTRACTS.museum] },
+  ];
+  const { sequence } = await server.getLatestLedger();
+  const res = await server.getEvents({ filters, startLedger: sequence, limit: 200 });
+  return { rows: res.events.map(toRow).filter((r): r is HistoryRow => !!r), cursor: res.cursor };
 }
 
 /* ---------- Demo reset ---------- */
