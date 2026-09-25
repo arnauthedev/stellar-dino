@@ -77,10 +77,15 @@ export class DinoGame {
     ctx.fillStyle = "#fafbfc"; ctx.fillRect(0, 0, WIDTH, height);
     this.drawSky(ctx, elapsed, height);
     const obstacles = this.state === "running" ? this.obstacles(elapsed) : [];
+    // View zoom when few players (drawing only: physics, timing and collisions are
+    // unchanged). The dino is shifted left so more of the track ahead stays visible.
+    const zoom = count === 1 ? 1.3 : count === 2 ? 1.15 : 1;
+    const offset = zoom === 1 ? 0 : 105 - 40 / zoom;
     players.forEach((player, index) => {
       const ground = index * laneHeight + laneHeight * 0.68;
-      this.drawLane(ctx, ground, index, elapsed);
       this.drawBird(ctx, ground - laneHeight * 0.68, ground, index, now);
+      const view = { zoom, offset };
+      this.drawLane(ctx, ground, index, elapsed, view);
       if (!player.remote && this.state === "running" && player.alive) {
         player.height = Math.max(0, player.height + player.velocity * dt);
         player.velocity -= 1740 * dt;
@@ -97,8 +102,8 @@ export class DinoGame {
           }
         }
       }
-      for (const obstacle of obstacles) this.drawCactus(ctx, obstacle.x, ground, obstacle.height);
-      this.drawDino(ctx, 105, ground - player.height, COLORS[index % COLORS.length], player.alive, elapsed, player.height > 0, now + index * 1700);
+      for (const obstacle of obstacles) this.drawCactus(ctx, obstacle.x, ground, obstacle.height, view);
+      this.drawDino(ctx, 105, ground, player.height, COLORS[index % COLORS.length], player.alive, elapsed, player.height > 0, now + index * 1700, view);
       if (players.length > 1) {
         ctx.fillStyle = "#6c747e"; ctx.font = "14px ui-monospace, monospace";
         ctx.fillText(player.name || `Player ${index + 1}`, 22, ground - 65);
@@ -140,24 +145,32 @@ export class DinoGame {
     drawSprite(ctx, sprite, x, Math.round(y), 1.4, 1.4, "#b3bac2");
   }
 
-  drawLane(ctx, ground, index, elapsed) {
-    ctx.fillStyle = "#d5dbe1"; ctx.fillRect(0, ground + 2, WIDTH, 1);
+  // view = { zoom, offset }: screen x = (world x - offset) * zoom; heights above the
+  // ground line are multiplied by zoom. Pixel sizes are scaled, not the canvas, so
+  // sprite edges stay on whole pixels.
+  drawLane(ctx, ground, index, elapsed, view) {
+    const z = view.zoom;
+    ctx.fillStyle = "#d5dbe1"; ctx.fillRect(0, Math.round(ground + 2), WIDTH, 1);
     ctx.fillStyle = "#e0e5ea";
-    for (let x = -((elapsed * 80) % 40); x < WIDTH; x += 40) ctx.fillRect(x, ground + 12, 15, 2);
+    const step = 40 * z;
+    for (let x = -((elapsed * 80 * z) % step); x < WIDTH; x += step) ctx.fillRect(Math.round(x), Math.round(ground + 2 + 10 * z), Math.round(15 * z), 2);
   }
 
-  drawCactus(ctx, x, ground, height) {
+  drawCactus(ctx, x, ground, height, view) {
     // Scale the 13x19 bitmap to the obstacle box; the taller cactus is also a bit wider.
+    const z = view.zoom;
     const sprite = SPRITES.cactus;
-    const sy = height / sprite.height;
-    const sx = height > 40 ? 2.2 : 2;
-    const left = x + 12 - (sprite.width * sx) / 2;
-    drawSprite(ctx, sprite, left, ground + 2 - height, sx, sy, "#68727c");
+    const sy = (height / sprite.height) * z;
+    const sx = (height > 40 ? 2.2 : 2) * z;
+    const left = (x + 12 - view.offset) * z - (sprite.width * sx) / 2;
+    drawSprite(ctx, sprite, Math.round(left), Math.round(ground + 2 - height * z), sx, sy, "#68727c");
   }
 
-  drawDino(ctx, x, ground, color, alive, elapsed, airborne, now) {
-    // 20x21 bitmap at 2.2x = 44x46 px, feet resting on the ground line (ground + 2).
-    const scale = 2.2;
+  drawDino(ctx, worldX, ground, jumpHeight, color, alive, elapsed, airborne, now, view) {
+    // 20x21 bitmap at 2.2x = 44x46 px (times the view zoom), feet on the ground line (ground + 2).
+    const scale = 2.2 * view.zoom;
+    const x = Math.round((worldX - view.offset) * view.zoom);
+    ground = ground - jumpHeight * view.zoom;
     const running = alive && this.state === "running" && !airborne;
     const pose = running ? (Math.floor(elapsed * 10) % 2 ? "walkB" : "walkA") : "stand";
     const blink = alive && this.state !== "running" && now % 3600 < 140;

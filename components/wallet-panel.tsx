@@ -36,15 +36,14 @@ function title(row: HistoryRow): string {
 export function WalletPanel({
   state,
   onEditLimit,
-  onChanged,
+  onCollapse,
 }: {
   state: AgentState;
   onEditLimit: () => void;
-  onChanged: () => void;
+  /** Hide the panel (the Wallet pill in the chat brings it back). */
+  onCollapse?: () => void;
 }) {
   const [rows, setRows] = useState<HistoryRow[] | null>(null);
-  const [topping, setTopping] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
   const [now, setNow] = useState(0);
 
   useEffect(() => {
@@ -68,21 +67,21 @@ export function WalletPanel({
   }, [load]);
   useChainEvents(() => load());
 
-  const topUp = async () => {
-    setTopping(true);
-    setMsg(null);
-    const res = await fetch("/api/wallet/topup", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-    setTopping(false);
-    setMsg(res.ok ? "Added 100.00 USDC (demo)" : "Top-up failed");
-    if (res.ok) onChanged();
-  };
-
   const used = Math.min(1, state.limit.limit ? state.limit.spent / state.limit.limit : 0);
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
       <section className="panel p-5">
-        <div className="label">Wallet</div>
+        <div className="flex items-center justify-between">
+          <div className="label">Wallet</div>
+          {onCollapse && (
+            <button className="icon-btn -mt-1 -mr-2 size-8!" onClick={onCollapse} aria-label="Hide wallet panel" title="Hide">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 6l6 6-6 6" />
+              </svg>
+            </button>
+          )}
+        </div>
         <div className="mt-1 flex items-baseline gap-2">
           <strong className="num text-[34px] font-medium leading-none tracking-tight">{state.wallet.toFixed(2)}</strong>
           <span className="text-sm text-subtle">USDC</span>
@@ -100,15 +99,9 @@ export function WalletPanel({
           <div className={`h-full rounded-full ${used > 0.85 ? "bg-bad" : "bg-good"}`} style={{ width: `${used * 100}%` }} />
         </div>
         <p className="mt-1.5 text-xs text-subtle">{state.limit.remaining.toFixed(2)} USDC left today. Above that, payments are blocked.</p>
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <button className="btn btn-primary" onClick={topUp} disabled={topping}>
-            {topping ? "Adding…" : "Top up"}
-          </button>
-          <button className="btn" onClick={onEditLimit}>
-            Edit limit
-          </button>
-        </div>
-        {msg && <p className="mt-2 text-xs text-subtle">{msg}</p>}
+        <button className="btn mt-4 w-full" onClick={onEditLimit}>
+          Edit limit
+        </button>
       </section>
 
       <section className="panel flex min-h-0 flex-1 flex-col py-4">

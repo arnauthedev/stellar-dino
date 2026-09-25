@@ -496,7 +496,7 @@ export function Companion({
     const dinoCenter = detached ? box.vw / 2 : box.left + menuCenter + s.dir * dinoW * 0.18;
     const stackLeft = clamp(dinoCenter - width / 2, 8, box.vw - width - 8);
     tailX = clamp(dinoCenter - stackLeft, 18, width - 18);
-    const above = menuShown ? dinoTop - 12 - MENU_H - 14 : dinoTop - 14;
+    const above = menuShown ? dinoTop - 12 - MENU_H - 28 : dinoTop - 30;
     // Not enough room above (panel at the top of the page): hang the bubbles below the dino.
     placement = detached ? "detached" : above - stackH < 8 ? "below" : "above";
     if (placement === "below") speech.reverse();
@@ -504,7 +504,7 @@ export function Companion({
       placement === "detached"
         ? { left: stackLeft, top: 16, width }
         : placement === "below"
-          ? { left: stackLeft, top: dinoBottom + 12, width }
+          ? { left: stackLeft, top: dinoBottom + 24, width }
           : { left: stackLeft, top: above, width, transform: "translateY(-100%)" };
     stack = createPortal(
       <div

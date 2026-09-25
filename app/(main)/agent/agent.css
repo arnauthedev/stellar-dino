@@ -65,8 +65,19 @@
     min-height: 0;
     view-transition-name: agent-side;
   }
-  .wallet-pills {
+  .agent-layout[data-side="open"] .wallet-pills {
     display: none !important;
+  }
+  /* Side column collapsed: back to two columns. */
+  .agent-layout[data-side="closed"] {
+    grid-template-columns: minmax(280px, 25%) 1fr;
+    grid-template-areas: "cal chat" "dino chat";
+  }
+  .agent-layout[data-side="closed"][data-expanded="true"] {
+    grid-template-areas: "cal cal" "dino chat";
+  }
+  .agent-layout[data-side="closed"] > .area-side {
+    display: none;
   }
 }
 

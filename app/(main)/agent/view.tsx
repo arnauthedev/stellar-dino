@@ -69,6 +69,7 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
   const [followUp, setFollowUp] = useState<FollowUp | null>(null);
   const [day, setDay] = useState(initial.today);
   const [drawer, setDrawer] = useState(false);
+  const [sideOpen, setSideOpen] = useState(true);
   const { react } = useCompanion();
   const router = useRouter();
   const messagesRef = useRef<ChatMessage[]>([]);
@@ -84,6 +85,17 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
     const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
     if (doc.startViewTransition) doc.startViewTransition(() => flushSync(() => setExpanded((e) => !e)));
     else setExpanded((e) => !e);
+  };
+
+  const toggleSide = (open: boolean) => {
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+    if (doc.startViewTransition) doc.startViewTransition(() => flushSync(() => setSideOpen(open)));
+    else setSideOpen(open);
+  };
+  // Wallet pills: reopen the side column on wide screens, otherwise open the drawer.
+  const openWallet = () => {
+    if (window.matchMedia("(min-width: 1280px)").matches) toggleSide(true);
+    else setDrawer(true);
   };
 
   const setChat = (next: ChatMessage[]) => {
@@ -235,7 +247,7 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
   });
 
   return (
-    <div className="agent-layout p-4 sm:p-6" data-expanded={expanded}>
+    <div className="agent-layout p-4 sm:p-6" data-expanded={expanded} data-side={sideOpen ? "open" : "closed"}>
       <section className="area-cal panel relative flex min-h-0 flex-col p-4">
         {expanded ? (
           <WeekCalendar events={state.calendar} today={state.today} className="min-h-0 flex-1" />
@@ -279,13 +291,13 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
         <header className="flex flex-wrap items-center gap-2">
           <h1 className="title px-1 text-xl">Dino</h1>
           <div className="wallet-pills ml-auto flex flex-wrap items-center gap-1.5">
-            <button className="pill hover:bg-chip" onClick={() => setDrawer(true)} title="Your wallet">
+            <button className="pill hover:bg-chip" onClick={openWallet} title="Your wallet">
               <span className="text-subtle">Wallet</span> <b className="num font-medium">{state.wallet.toFixed(2)}</b>
             </button>
             <span className="pill" title="Recycling credit (sustainable products only)">
               <span className="text-subtle">Credit</span> <b className="num font-medium">{state.credit.toFixed(2)}</b>
             </span>
-            <button className="pill hover:bg-chip" onClick={() => setDrawer(true)} title="Daily spending limit">
+            <button className="pill hover:bg-chip" onClick={openWallet} title="Daily spending limit">
               <span className="text-subtle">Limit</span>{" "}
               <b className="num font-medium">
                 {state.limit.spent.toFixed(0)}/{state.limit.limit.toFixed(0)}
@@ -311,14 +323,14 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
       </section>
 
       <aside className="area-side">
-        <WalletPanel state={state} onEditLimit={() => setDialog("profile")} onChanged={refresh} />
+        <WalletPanel state={state} onEditLimit={() => setDialog("profile")} onCollapse={() => toggleSide(false)} />
       </aside>
 
       {/* Smaller screens: the same panel slides in from the right. */}
       {drawer && (
         <div className="fixed inset-0 z-40 flex justify-end bg-[#25334a22] backdrop-blur-[2px]" onClick={() => setDrawer(false)}>
           <div className="h-full w-[min(360px,92vw)] animate-[drawer-in_.22s_ease-out] overflow-y-auto bg-bg p-3" onClick={(e) => e.stopPropagation()}>
-            <WalletPanel state={state} onEditLimit={() => setDialog("profile")} onChanged={refresh} />
+            <WalletPanel state={state} onEditLimit={() => setDialog("profile")} onCollapse={() => setDrawer(false)} />
           </div>
         </div>
       )}
