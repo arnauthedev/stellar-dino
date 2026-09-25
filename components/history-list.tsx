@@ -6,9 +6,9 @@ const LABEL: Record<HistoryRow["kind"], string> = {
   bottle_recycled: "Recycling",
   pool_funded: "Government",
   product_added: "Airport shop",
-  ticket_sold: "Airline",
-  hold_released: "Airline",
-  delay_refund: "Airline refund",
+  ticket_sold: "Skyscannerd",
+  hold_released: "Skyscannerd",
+  delay_refund: "Skyscannerd refund",
   museum_ticket_sold: "Museum",
   museum_rescheduled: "Museum",
 };

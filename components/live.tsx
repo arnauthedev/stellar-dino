@@ -100,7 +100,7 @@ export function LiveProvider({ children }: { children: React.ReactNode }) {
   return (
     <Ctx.Provider value={{ subscribe, toast }}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 top-[68px] z-50 flex flex-col items-center gap-2 px-4" aria-live="polite">
+      <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex flex-col items-center gap-2 px-4" aria-live="polite">
         {toasts.map((t) => (
           <div key={t.id} className="toast pointer-events-auto flex max-w-[min(92vw,560px)] items-center gap-3 animate-[toast-in_.25s_ease-out] shadow-[var(--shadow-dialog)]">
             <span

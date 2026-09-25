@@ -5,6 +5,8 @@ import { DinoSprite } from "@/components/pixel";
 import { getResetLedger } from "@/lib/demo";
 import { getBalances, getCredit, getHistory, getSpendingLimit, getStats, type HistoryRow } from "@/lib/stellar";
 
+export const metadata = { title: "Actors · Stellar Dino" };
+
 export const dynamic = "force-dynamic";
 
 const fmt = (n: number | null | undefined) => (n == null ? "–" : n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
@@ -90,7 +92,7 @@ export default async function ActorsPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 pb-24 sm:px-6">
       <LiveRefresh />
-      <div className="mb-5 mt-4">
+      <div className="mb-6 mt-8">
         <h1 className="title text-3xl">Actors</h1>
         <p className="text-sm text-subtle">Live balances on Stellar testnet. Amounts in demo USDC.</p>
       </div>
@@ -152,8 +154,8 @@ export default async function ActorsPage() {
           }
         />
         <Card
-          name="Airline"
-          role="Sells tickets; 20% held until landing"
+          name="Skyscannerd"
+          role="Airline · sells tickets; 20% held until landing"
           color="var(--color-p-plum)"
           address={ACTORS.airline}
           rows={of("ticket_sold", "hold_released", "delay_refund")}

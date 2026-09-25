@@ -16,10 +16,13 @@ export function Chat({
   messages,
   onSend,
   busy,
+  overlay,
 }: {
   messages: ChatMessage[];
   onSend: (text: string) => void;
   busy: boolean;
+  /** Shown over the messages (not over the input), e.g. a proposal card. */
+  overlay?: React.ReactNode;
 }) {
   const [text, setText] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
@@ -39,6 +42,12 @@ export function Chat({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      <div className="relative flex min-h-0 flex-1 flex-col">
+      {overlay && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/80 p-2 backdrop-blur-[2px] sm:p-4">
+          {overlay}
+        </div>
+      )}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-1 py-3">
         {messages.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
@@ -87,6 +96,7 @@ export function Chat({
           </div>
         )}
         <div ref={endRef} />
+      </div>
       </div>
       <form
         className="flex gap-2 pt-2"

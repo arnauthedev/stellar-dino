@@ -3,12 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import { CardView, type CardAction } from "@/components/cards";
 import { Chat, type ChatMessage } from "@/components/chat";
 import { Companion, CompanionProvider, useCompanion, type CompanionOption } from "@/components/companion";
 import { HistoryDialog, IncidentDialog, ProfileDialog } from "@/components/companion-dialogs";
-import { DayCalendar } from "@/components/day-calendar";
+import { DayCalendar, WeekCalendar } from "@/components/day-calendar";
 import { useChainEvents } from "@/components/live";
 import type { AgentState } from "@/lib/agent-state";
+import type { Card } from "@/lib/agent/cards";
 import type { HistoryRow } from "@/lib/stellar";
 
 const expandIcon = "M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7";
@@ -22,13 +24,27 @@ export function AgentView({ initial, wallet }: { initial: AgentState; wallet: st
   );
 }
 
+function describe(card: Card): string {
+  switch (card.kind) {
+    case "trip":
+      return `${card.airline} ${card.flight.code} ${card.flight.from}-${card.flight.to} at ${card.flight.depart}${card.museum ? ` + museum at ${card.museum.time}` : ""}`;
+    case "museum":
+      return `museum at ${card.time}`;
+    case "product":
+      return card.product.name;
+    default:
+      return card.kind;
+  }
+}
+
 function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string }) {
   const [state, setState] = useState(initial);
   const [expanded, setExpanded] = useState(false);
-  const [tab, setTab] = useState<"chat" | "shop">("chat");
   const [dialog, setDialog] = useState<Exclude<CompanionOption, "food"> | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [busy, setBusy] = useState(false);
+  const [card, setCard] = useState<Card | null>(null);
+  const [paying, setPaying] = useState(false);
   const { react } = useCompanion();
   const router = useRouter();
   const messagesRef = useRef<ChatMessage[]>([]);
@@ -50,6 +66,8 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
     messagesRef.current = next;
     setMessages(next);
   };
+  const say = (content: string, links?: ChatMessage["links"]) =>
+    setChat([...messagesRef.current, { role: "assistant", content, links }]);
 
   /** One request to Dino at a time (user messages and chain events are queued). */
   const ask = (input: { text?: string; event?: string }) => {
@@ -65,19 +83,63 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
           body: JSON.stringify({ messages: history.map(({ role, content }) => ({ role, content })), event: input.event }),
         });
         const data = await res.json();
-        setChat([...messagesRef.current, { role: "assistant", content: data.reply ?? "Sorry, something went wrong.", links: data.links }]);
+        say(data.reply ?? "Sorry, something went wrong.", data.links);
+        if (data.card) setCard(data.card);
         if (data.mood === "happy") react("happy");
         if (data.actions?.some((a: { type: string }) => a.type === "open_game")) setTimeout(() => router.push("/play"), 1200);
         if (data.links?.length) refresh();
       } catch {
-        setChat([...messagesRef.current, { role: "assistant", content: "I couldn't reach the server. Try again?" }]);
+        say("I couldn't reach the server. Try again?");
       } finally {
         setBusy(false);
       }
     });
   };
 
-  const send = (text: string) => ask({ text });
+  const onCard = async (action: CardAction) => {
+    if (action.type === "pick") {
+      // Picking an option from a list turns it into a single proposal.
+      setCard({ ...action.card, limitLeft: state.limit.remaining } as Card);
+      return;
+    }
+    if (action.type === "reject") {
+      setCard(null);
+      ask({ event: `The user rejected the proposal: ${describe(action.card)}.` });
+      return;
+    }
+    const c = action.card;
+    const body =
+      c.kind === "trip"
+        ? { kind: "trip", flightId: c.flight.id, museumTime: c.museum?.time ?? null }
+        : c.kind === "museum"
+          ? { kind: "museum", time: c.time }
+          : c.kind === "product"
+            ? { kind: "product", productId: c.product.id }
+            : null;
+    if (!body) return;
+    setPaying(true);
+    try {
+      const res = await fetch("/api/cards/accept", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCard(null);
+        say(data.message, data.links);
+        react("happy");
+        refresh();
+      } else {
+        setCard(null);
+        say(`I couldn't pay for that: ${data.error ?? "unknown error"}.`);
+      }
+    } catch {
+      say("I couldn't reach the server. Your card is still here, try again?");
+    } finally {
+      setPaying(false);
+    }
+  };
 
   useChainEvents((rows: HistoryRow[]) => {
     const mine = rows.filter((r) => r.user === wallet);
@@ -94,13 +156,16 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
     if (rows.length) refresh();
   });
 
-
   return (
-    <div className="agent-grid px-4 pb-4 sm:px-6" data-expanded={expanded}>
+    <div className="agent-grid p-4 sm:p-6" data-expanded={expanded}>
       <section className="area-cal panel relative flex min-h-0 flex-col p-4">
-        <DayCalendar title="Today" events={state.calendar} hourHeight={expanded ? 44 : 34} className="min-h-0 flex-1" />
+        {expanded ? (
+          <WeekCalendar events={state.calendar} className="min-h-0 flex-1" />
+        ) : (
+          <DayCalendar title="Today" events={state.calendar} hourHeight={34} className="min-h-0 flex-1" />
+        )}
         <button
-          className={`icon-btn absolute hidden lg:inline-flex ${expanded ? "top-2.5 right-2.5" : "right-3 bottom-3"}`}
+          className="icon-btn absolute top-2.5 right-2.5 hidden lg:inline-flex"
           onClick={toggleExpanded}
           aria-label={expanded ? "Collapse calendar" : "Expand calendar"}
           aria-pressed={expanded}
@@ -118,14 +183,7 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
 
       <section className="area-chat panel flex min-h-0 flex-col p-4">
         <header className="flex flex-wrap items-center gap-2">
-          <div className="segments" role="tablist" aria-label="Panel">
-            <button className="segment" role="tab" aria-selected={tab === "chat"} onClick={() => setTab("chat")}>
-              Chat with Dino
-            </button>
-            <button className="segment" role="tab" aria-selected={tab === "shop"} onClick={() => setTab("shop")}>
-              Airport shop
-            </button>
-          </div>
+          <h1 className="title px-1 text-xl">Dino</h1>
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
             <button className="pill hover:bg-chip" onClick={() => setDialog("profile")} title="Your wallet">
               <span className="text-subtle">Wallet</span> <b className="num font-medium">{state.wallet.toFixed(2)}</b>
@@ -141,99 +199,20 @@ function AgentLayout({ initial, wallet }: { initial: AgentState; wallet: string 
             </button>
           </div>
         </header>
-        {tab === "chat" ? (
-          <Chat messages={messages} onSend={send} busy={busy} />
-        ) : (
-          <Shop state={state} onBought={refresh} />
-        )}
+        <Chat
+          messages={messages}
+          onSend={(text) => {
+            setCard(null);
+            ask({ text });
+          }}
+          busy={busy}
+          overlay={card ? <CardView card={card} busy={paying} onAction={onCard} onClose={() => setCard(null)} /> : null}
+        />
       </section>
 
       <HistoryDialog open={dialog === "history"} onClose={() => setDialog(null)} />
       <IncidentDialog open={dialog === "incident"} onClose={() => setDialog(null)} />
       <ProfileDialog open={dialog === "profile"} onClose={() => setDialog(null)} state={state} wallet={wallet} onChanged={refresh} />
-    </div>
-  );
-}
-
-function Shop({ state, onBought }: { state: AgentState; onBought: () => void }) {
-  const [pending, setPending] = useState<string | null>(null);
-  const [result, setResult] = useState<{ id: string; ok: boolean; text: string; href?: string } | null>(null);
-  const { react } = useCompanion();
-
-  const buy = async (id: string) => {
-    setPending(id);
-    setResult(null);
-    const res = await fetch("/api/shop/buy", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId: id }),
-    });
-    const data = await res.json();
-    setPending(null);
-    if (res.ok) {
-      const r = data.result as { userPaid: number; govPaid: number };
-      setResult({
-        id,
-        ok: true,
-        text: r.govPaid > 0 ? `You paid ${r.userPaid.toFixed(2)}, Government paid ${r.govPaid.toFixed(2)}` : `Paid ${r.userPaid.toFixed(2)} USDC`,
-        href: data.explorerUrl,
-      });
-      react("jump");
-      onBought();
-    } else {
-      setResult({ id, ok: false, text: data.error ?? "Payment failed" });
-    }
-  };
-
-  return (
-    <div className="min-h-0 flex-1 overflow-y-auto pt-4">
-      <p className="mb-4 text-sm text-subtle">
-        {state.credit > 0 ? (
-          <>
-            Your recycling credit of <b className="num text-ink">{state.credit.toFixed(2)} USDC</b> applies to{" "}
-            <span className="badge badge-good">♻ Sustainable</span> products only. The government pays that part.
-          </>
-        ) : (
-          <>Recycle a bottle bought here to earn 0.50 USDC credit for sustainable products.</>
-        )}
-      </p>
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {state.products.map((p) => {
-          const credit = p.sustainable ? Math.min(state.credit, p.price) : 0;
-          return (
-            <li key={p.id} className="flex flex-col gap-2 rounded-ctl bg-field p-3.5">
-              <div className="flex items-start gap-2">
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium">{p.name}</div>
-                  <div className="mt-1 flex flex-wrap gap-1.5">
-                    {p.sustainable ? <span className="badge badge-good">♻ Sustainable</span> : <span className="badge">Full price</span>}
-                    {p.bottle && <span className="badge">Recyclable bottle</span>}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="num text-lg">{(p.price - credit).toFixed(2)}</div>
-                  {credit > 0 && <div className="num text-xs text-faint line-through">{p.price.toFixed(2)}</div>}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button className="btn btn-primary min-h-9! px-3.5! py-1.5!" disabled={!!pending} onClick={() => buy(p.id)}>
-                  {pending === p.id ? "Paying…" : "Buy"}
-                </button>
-                {result?.id === p.id && (
-                  <span className={`text-xs ${result.ok ? "text-good" : "text-bad"}`}>
-                    {result.text}{" "}
-                    {result.href && (
-                      <a className="text-accent-ink underline" href={result.href} target="_blank" rel="noreferrer">
-                        tx
-                      </a>
-                    )}
-                  </span>
-                )}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
     </div>
   );
 }

@@ -1,9 +1,6 @@
 import "server-only";
 import type { AiTool } from "@/lib/ai";
 import {
-  bookMuseum,
-  buyFlight,
-  buyProduct,
   getBalances,
   getBottles,
   getCredit,
@@ -21,7 +18,10 @@ import {
 import { getResetLedger } from "@/lib/demo";
 import { MUSEUM_BUFFER_MINUTES, MUSEUM_NAME, travelMinutes } from "@/lib/trip";
 
-// Dino's tools. They wrap lib/stellar.ts; money-moving tools return explorerUrl.
+// Dino's tools. They wrap lib/stellar.ts. Dino never pays on its own: it shows
+// options or proposes a purchase (show_* / propose_* tools) and the app renders a
+// card; the purchase runs only when the user taps Accept (app/api/cards/accept).
+// Exception: rescheduling the museum after a delay (free) is done by Dino.
 
 const obj = (properties: Record<string, unknown> = {}, required: string[] = []) => ({
   type: "object",
@@ -35,7 +35,7 @@ const str = (description: string) => ({ type: "string", description });
 export const dinoTools: AiTool[] = [
   {
     name: "search_flights",
-    description: "List today's flights from the demo airline (Lisbon departures), with times, price and status.",
+    description: "List today's Skyscannerd flights (Lisbon departures), with times, price and status.",
     parameters: obj({ to: str("Optional destination airport code, e.g. CDG (Paris) or AMS (Amsterdam).") }),
     run: async ({ to }) => {
       const flights = await listFlights();
@@ -49,17 +49,9 @@ export const dinoTools: AiTool[] = [
           arrive: f.arrive,
           price_usdc: f.price,
           status: f.status,
+          airline: "Skyscannerd",
           note: "20% of the price is held until landing and refunded if the flight is late.",
         }));
-    },
-  },
-  {
-    name: "book_flight",
-    description: "Buy a flight ticket from the user's smart wallet. Airline tickets are never discounted.",
-    parameters: obj({ flight_id: str("Flight id from search_flights, e.g. TP432") }, ["flight_id"]),
-    run: async ({ flight_id }) => {
-      const r = await buyFlight(String(flight_id));
-      return { paid_usdc: r.result.price, held_until_landing_usdc: r.result.held, explorerUrl: r.explorerUrl };
     },
   },
   {
@@ -76,15 +68,6 @@ export const dinoTools: AiTool[] = [
       const min = after ? toMinutes(String(after)) : 0;
       const slots = await museumSlots();
       return slots.filter((s) => s.free > 0 && s.minutes >= min).map((s) => ({ time: s.time, free_places: s.free }));
-    },
-  },
-  {
-    name: "book_museum",
-    description: `Buy a timed-entry ticket for the ${MUSEUM_NAME} today (18 USDC). Only one booking per user.`,
-    parameters: obj({ time: str("Slot time HH:MM from museum_slots") }, ["time"]),
-    run: async ({ time }) => {
-      const r = await bookMuseum(String(time));
-      return { booked_time: r.result.time, paid_usdc: r.result.price, explorerUrl: r.explorerUrl };
     },
   },
   {
@@ -160,16 +143,6 @@ export const dinoTools: AiTool[] = [
     },
   },
   {
-    name: "buy_product",
-    description:
-      "Buy a product at the airport shop from the user's wallet. For sustainable products the recycling credit is applied and the government pays that part.",
-    parameters: obj({ product_id: str("product_id from shop_products") }, ["product_id"]),
-    run: async ({ product_id }) => {
-      const r = await buyProduct(String(product_id));
-      return { you_paid_usdc: r.result.userPaid, government_paid_usdc: r.result.govPaid, explorerUrl: r.explorerUrl };
-    },
-  },
-  {
     name: "get_history",
     description: "The user's recent transactions (newest first) with readable notes.",
     parameters: obj({ limit: { type: "number", description: "How many (default 6)" } }),
@@ -183,8 +156,45 @@ export const dinoTools: AiTool[] = [
     },
   },
   {
+    name: "show_options",
+    description:
+      "Show the user a pickable list as cards: 'flights' (Skyscannerd flights, optional destination), 'museum_slots' (free slots, optional after HH:MM) or 'products' (airport shop). Use it when the user wants to see or choose options.",
+    parameters: obj(
+      {
+        kind: { type: "string", enum: ["flights", "museum_slots", "products"] },
+        to: str("Optional destination airport code for flights"),
+        after: str("Optional earliest time HH:MM for museum slots"),
+      },
+      ["kind"],
+    ),
+    run: async (args) => ({ shown: true, ...args }),
+  },
+  {
+    name: "propose_trip",
+    description:
+      "Propose a trip for the user to accept: a Skyscannerd flight and optionally a museum slot (use the first free slot at or after arrival + travel + buffer, see my_trip / museum_slots). Nothing is paid until the user accepts the card.",
+    parameters: obj(
+      { flight_id: str("Flight id, e.g. SK432"), museum_time: str("Optional museum slot HH:MM") },
+      ["flight_id"],
+    ),
+    run: async ({ flight_id, museum_time }) => ({ proposed: true, flight_id, museum_time: museum_time ?? null }),
+  },
+  {
+    name: "propose_museum",
+    description: "Propose a museum slot for the user to accept (when they only want the museum). Nothing is paid until accepted.",
+    parameters: obj({ time: str("Slot time HH:MM") }, ["time"]),
+    run: async ({ time }) => ({ proposed: true, time }),
+  },
+  {
+    name: "propose_product",
+    description: "Propose an airport shop product for the user to accept and pay. Nothing is paid until accepted.",
+    parameters: obj({ product_id: str("product_id from shop_products") }, ["product_id"]),
+    run: async ({ product_id }) => ({ proposed: true, product_id }),
+  },
+  {
     name: "open_game",
-    description: "Open the Motion Dino game (the body-controlled Dino runner) for the user.",
+    description:
+      "Open the Motion Dino game (body-controlled Dino runner played with jumps or squats in front of the camera). Use it when the user asks for a game, some exercise or sport, or something active to do indoors.",
     parameters: obj(),
     run: async () => ({ opened: true }),
   },

@@ -5,6 +5,7 @@ import { AUTH_COOKIE, demoToken } from "@/lib/auth";
 function isPublic(req: NextRequest): boolean {
   const { pathname, searchParams } = req.nextUrl;
   if (pathname === "/login" || pathname === "/recycle" || pathname.startsWith("/api/recycle/claim")) return true;
+  if (pathname === "/pay" || pathname.startsWith("/api/shop/pay")) return true;
   if (pathname === "/play" && searchParams.has("g")) return true;
   if (pathname.startsWith("/game/") || pathname.startsWith("/api/game/join")) return true;
   return false;

@@ -16,3 +16,5 @@ export const MUSEUM_NAME = "Louvre Museum";
 export function travelMinutes(from: string, to: string): number {
   return TRAVEL_MINUTES[`${from}-${to}`.toLowerCase()] ?? 45;
 }
+
+export const AIRLINE_NAME = "Skyscannerd";

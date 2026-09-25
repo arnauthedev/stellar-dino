@@ -3,6 +3,8 @@ import { LiveRefresh } from "@/components/live-refresh";
 import { getResetLedger } from "@/lib/demo";
 import { getHistory } from "@/lib/stellar";
 
+export const metadata = { title: "History" };
+
 export const dynamic = "force-dynamic";
 
 export default async function HistoryPage() {
@@ -12,7 +14,7 @@ export default async function HistoryPage() {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 pb-24 sm:px-6">
       <LiveRefresh />
-      <div className="mb-5 mt-4">
+      <div className="mb-6 mt-8">
         <h1 className="title text-3xl">History</h1>
         <p className="text-sm text-subtle">Every payment made from your wallet, verifiable on the Stellar testnet explorer.</p>
       </div>

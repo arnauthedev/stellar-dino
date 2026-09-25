@@ -11,7 +11,7 @@ import {
   type Product,
   type SpendingLimit,
 } from "@/lib/stellar";
-import { MUSEUM_NAME, MUSEUM_VISIT_MINUTES, travelMinutes } from "@/lib/trip";
+import { AIRLINE_NAME, MUSEUM_NAME, MUSEUM_VISIT_MINUTES, travelMinutes } from "@/lib/trip";
 
 export type AgentState = {
   calendar: CalendarEvent[];
@@ -37,7 +37,7 @@ export async function getAgentState(): Promise<AgentState> {
     const delayed = f.status === "Delayed";
     calendar.push({
       id: `flight-${f.id}`,
-      title: `Flight ${f.code} ${f.from} → ${f.to}`,
+      title: `${AIRLINE_NAME} ${f.code} ${f.from} → ${f.to}`,
       start: f.depart,
       end: f.arrive,
       detail: delayed

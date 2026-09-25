@@ -126,3 +126,100 @@ export function DayCalendar({
     </div>
   );
 }
+
+/** Monday-Sunday view; the demo's events are all today, drawn in today's column. */
+export function WeekCalendar({
+  events,
+  startHour = 8,
+  endHour = 24,
+  hourHeight = 40,
+  className,
+}: {
+  events: CalendarEvent[];
+  startHour?: number;
+  endHour?: number;
+  hourHeight?: number;
+  className?: string;
+}) {
+  const scroller = useRef<HTMLDivElement>(null);
+  const px = (minutes: number) => ((minutes - startHour * 60) / 60) * hourHeight;
+  const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
+  const height = (endHour - startHour) * hourHeight;
+  const firstStart = events.length ? Math.min(...events.map((e) => toMinutes(e.start))) : null;
+
+  // Week of today (Lisbon), Monday first.
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Lisbon" }));
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
+  });
+  const todayIndex = (now.getDay() + 6) % 7;
+
+  useEffect(() => {
+    if (firstStart !== null && scroller.current) {
+      scroller.current.scrollTo({ top: Math.max(0, px(firstStart - 30)), behavior: "smooth" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstStart]);
+
+  return (
+    <div className={`flex min-h-0 flex-col ${className ?? ""}`}>
+      <div className="grid grid-cols-[44px_repeat(7,1fr)] pr-12 pb-2">
+        <div />
+        {days.map((d, i) => (
+          <div key={i} className="text-center">
+            <div className={`label text-[11px]! ${i === todayIndex ? "text-accent-ink!" : ""}`}>
+              {d.toLocaleDateString("en-GB", { weekday: "short" })}
+            </div>
+            <div
+              className={`num mx-auto mt-0.5 flex size-7 items-center justify-center rounded-full text-sm ${
+                i === todayIndex ? "bg-accent text-white" : "text-subtle"
+              }`}
+            >
+              {d.getDate()}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto pr-1">
+        <div className="relative grid grid-cols-[44px_repeat(7,1fr)]" style={{ height: height + 16 }}>
+          {hours.map((h) => (
+            <div key={h} className="contents">
+              <div className="num absolute left-0 -translate-y-1/2 text-[11px] text-faint" style={{ top: px(h * 60) + 8 }}>
+                {String(h % 24).padStart(2, "0")}:00
+              </div>
+              <div className="absolute right-0 left-[44px] h-px bg-line" style={{ top: px(h * 60) + 8 }} />
+            </div>
+          ))}
+          {days.map((_, i) => (
+            <div
+              key={i}
+              className={`absolute top-2 bottom-2 border-l border-line ${i === todayIndex ? "bg-accent-soft/40" : ""}`}
+              style={{ left: `calc(44px + ${i} * (100% - 44px) / 7)`, width: "calc((100% - 44px) / 7)" }}
+            >
+              {i === todayIndex &&
+                layout(events).map(({ event, col, cols }) => {
+                  const top = px(toMinutes(event.start));
+                  const h = Math.max(22, px(toMinutes(event.end)) - top - 2);
+                  return (
+                    <div
+                      key={event.id}
+                      className={`absolute overflow-hidden rounded-[8px] border-l-[3px] px-2 py-1 text-[12px] leading-tight ${TONES[event.tone ?? "neutral"]}`}
+                      style={{ top, height: h, left: `calc(${(col / cols) * 100}% + 3px)`, width: `calc(${100 / cols}% - 6px)` }}
+                      title={`${event.title} ${event.start}–${event.end}`}
+                    >
+                      <div className="truncate font-medium">{event.title}</div>
+                      {h >= 40 && <div className="num truncate text-[11px] opacity-80">{event.start}–{event.end}</div>}
+                    </div>
+                  );
+                })}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

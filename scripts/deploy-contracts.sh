@@ -102,11 +102,11 @@ add_product tote "Recycled tote bag" $((8 * U)) true false
 add_product sandwich "Sandwich" $((45 * U / 10)) false false
 add_product chocolate "Chocolate" $((3 * U)) false false
 
-step "airline flights"
+step "Skyscannerd flights"
 add_flight() { invoke airline "$AIRLINE_C" -- add_flight --id "$1" --code "$1" --from "$2" --to "$3" --depart "$4" --arrive "$5" --price "$6" >/dev/null; }
-add_flight TP432 LIS CDG 600 815 $((120 * U))
-add_flight TP438 LIS CDG 900 1115 $((95 * U))
-add_flight TP650 LIS AMS 660 880 $((110 * U))
+add_flight SK432 LIS CDG 600 815 $((120 * U))
+add_flight SK438 LIS CDG 900 1115 $((95 * U))
+add_flight SK650 LIS AMS 660 880 $((110 * U))
 
 step "museum slots (10:00-18:00 every 30 min) for today and tomorrow"
 TIMES="[$(seq 600 30 1080 | paste -sd, -)]"
