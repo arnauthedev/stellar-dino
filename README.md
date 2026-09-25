@@ -70,6 +70,13 @@ The script:
 Afterwards, commit `config/actors.ts` and `config/contracts.ts` and push (this deploys).
 To reset only the demo state (not the accounts), use `resetDemo()` from `lib/stellar.ts` (the control panel button).
 
+## Motion Dino game
+
+`dino-game/` is the webcam Dino game (MediaPipe pose). `npm run build` first runs `npm run build:game`,
+which builds it and copies it to `public/game/` (served at `/game/`, embedded by `/play`).
+For local development run `npm run build:game` once (or `npm --prefix dino-game run build:watch`).
+There is one global game over Supabase Realtime; see `dino-game/README.md`.
+
 ## Where secrets live
 
 | What | Where |
@@ -78,8 +85,8 @@ To reset only the demo state (not the accounts), use `resetDemo()` from `lib/ste
 | Stellar CLI identities | `.stellar-cli/` (git-ignored) |
 | Public Stellar addresses | `config/actors.ts` (committed) |
 
-Never commit `.env*`, `.stellar-cli/`, `docs/` or `dino-game/`.
-`docs/` and `dino-game/` are excluded locally through `.git/info/exclude`.
+Never commit `.env*`, `.stellar-cli/` or `docs/`.
+`docs/` is excluded locally through `.git/info/exclude`.
 
 ## Code map
 

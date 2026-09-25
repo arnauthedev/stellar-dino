@@ -48,3 +48,6 @@ supabase/.temp/
 
 # rust build output
 contracts/target/
+
+# game build, symlinked locally from dino-game/dist (not in git until allowed)
+/public/game

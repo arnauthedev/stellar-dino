@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run build:game && NEXT_PUBLIC_GAME_AVAILABLE=1 next build",
     "start": "next start",
     "lint": "eslint",
     "test:contracts": "cd contracts && cargo test",
-    "test:testnet": "tsx --conditions=react-server --env-file=.env.local scripts/e2e-testnet.ts"
+    "test:testnet": "tsx --conditions=react-server --env-file=.env.local scripts/e2e-testnet.ts",
+    "build:game": "npm --prefix dino-game ci --omit=dev && npm --prefix dino-game run build && rm -rf public/game && cp -R dino-game/dist public/game"
   },
   "dependencies": {
     "@stellar/stellar-sdk": "^17.1.0",
