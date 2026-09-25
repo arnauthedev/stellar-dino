@@ -42,3 +42,6 @@ next-env.d.ts
 
 # supabase cli cache
 supabase/.temp/
+
+# stellar cli local config (contains secrets)
+.stellar-cli/
