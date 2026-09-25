@@ -14,6 +14,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Local-only folders (not in git)
     "dino-game/**",
+    "public/game/**",
     "docs/**",
     ".vercel/**",
     ".stellar-cli/**",
