@@ -24,7 +24,7 @@ document.querySelector("#app").innerHTML = `
     <section id="game-panel" class="game-panel" aria-label="Dino game">
       <div class="game-frame"><canvas id="game" tabindex="0" aria-label="Dino game. Space, Up Arrow, or tap to start and jump."></canvas></div>
       <div class="score-overlay" aria-label="Score and best score"><div><span>Score</span><strong id="score">00000</strong></div><div class="best"><span>Best</span><strong id="best">00000</strong></div></div>
-      <div id="game-overlay" class="game-overlay"><h1 id="gesture-prompt">Jump to start</h1><div id="squat-progress" class="squat-progress hidden" aria-label="Zero of two squats"><i></i><i></i></div><button id="enable-camera" class="enable-camera">${cameraIcon}<span>Enable camera</span></button></div>
+      <div id="game-overlay" class="game-overlay"><h1 id="gesture-prompt">Squat twice to start</h1><div id="squat-progress" class="squat-progress hidden" aria-label="Zero of two squats"><i></i><i></i></div><button id="enable-camera" class="enable-camera">${cameraIcon}<span>Enable camera</span></button></div>
       <p id="tracking-message" class="tracking-message" role="status"></p>
       <div class="dock"><div class="segments" role="group" aria-label="Movement mode"><button id="mode-jump" class="segment active" aria-pressed="true">Jump</button><button id="mode-squat" class="segment" aria-pressed="false">Squat</button></div><button id="camera-toggle" class="icon-button" aria-label="Turn on camera" title="Turn on camera" aria-pressed="false">${cameraIcon}</button><button id="camera-visibility" class="icon-button" aria-label="Hide camera" title="Hide camera" aria-pressed="false">${panelIcon}</button></div>
     </section>
@@ -66,8 +66,8 @@ function updateUi() {
   const running = game.state === "running", countdown = game.state === "countdown";
   $("game-overlay").classList.toggle("hidden", running);
   const verb = game.state === "over" ? "restart" : "start";
-  text("gesture-prompt", countdown ? "Ready…" : mode === "jump" ? `Jump to ${verb}` : `Squat twice to ${verb}`);
-  $("squat-progress").classList.toggle("hidden", mode !== "squat" || running || countdown || !cameraActive);
+  text("gesture-prompt", countdown ? "Ready…" : cameraActive ? `Squat twice to ${verb}` : `Tap or press Space to ${verb}`);
+  $("squat-progress").classList.toggle("hidden", running || countdown || !cameraActive);
   $("squat-progress").setAttribute("aria-label", `${gestures.progress} of two squats`);
   [...$("squat-progress").children].forEach((dot, i) => dot.classList.toggle("done", i < gestures.progress));
   $("enable-camera").classList.toggle("hidden", cameraActive || cameraLoading || running || countdown);
@@ -109,7 +109,8 @@ function movement(id) {
 const pose = new PoseController(
   $("camera"), $("pose-overlay"),
   (players) => setLocalPlayers(cameraActive ? players : [keyboardPlayer()]),
-  movement, status, () => mode,
+  // Before a round the tracker looks for squats (the start gesture); during it, the chosen mode.
+  movement, status, () => (game.state === "running" ? mode : "squat"),
   (metrics) => {
     text("tracking-speed", metrics ? `${metrics.fps} fps · ${metrics.latency} ms` : "");
     $("tracking-speed").classList.toggle("hidden", !metrics);
@@ -237,7 +238,7 @@ if (isHost) {
       joined = true;
       $("join").classList.add("hidden");
       setLocalPlayers(cameraActive ? localPlayers : [keyboardPlayer()]);
-      toast(`Welcome, ${name}! Enable the camera, then jump to start.`);
+      toast(`Welcome, ${name}! Enable the camera, then squat twice to start.`);
     } catch (error) {
       text("join-status", error.status === 404 ? "This game code is no longer valid. Scan the QR code on the big screen again." : error.message);
     }

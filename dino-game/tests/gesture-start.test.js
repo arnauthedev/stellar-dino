@@ -9,15 +9,21 @@ function pose(squat = false, rise = 0) {
   return points;
 }
 
-test('the first physical jump starts, then subsequent jumps control the running game', () => {
+test('jump mode also starts with two squats, then jumps control the running game', () => {
   const gate = new GestureStart(), actions=[];
   let state='idle';
+  // The app feeds the tracker 'squat' before a round and the chosen mode while running.
+  const detect = () => (state === 'running' ? 'jump' : 'squat');
   const tracker=new PoseTracker((id)=>{ const action=gate.movement(id,'jump',state);actions.push(action);if(action==='start')state='running'; });
-  tracker.update([pose()],0,'jump'); tracker.update([pose()],400,'jump');
-  tracker.update([pose(false,.09)],500,'jump');
-  assert.deepEqual(actions,['start']);
-  tracker.update([pose()],700,'jump'); tracker.update([pose(false,.09)],1000,'jump');
-  assert.deepEqual(actions,['start','jump']);
+  tracker.update([pose()],0,detect()); tracker.update([pose()],400,detect());
+  tracker.update([pose(false,.09)],500,detect()); // a jump before the round does not start it
+  assert.deepEqual(actions,[]);
+  tracker.update([pose()],700,detect()); tracker.update([pose(true)],900,detect());
+  tracker.update([pose()],1300,detect()); tracker.update([pose(true)],1700,detect());
+  assert.deepEqual(actions,['progress','start']);
+  tracker.update([pose()],2100,detect()); tracker.update([pose()],2500,detect());
+  tracker.update([pose(false,.09)],2900,detect());
+  assert.deepEqual(actions,['progress','start','jump']);
 });
 
 test('a held squat counts once; standing and squatting again starts the round', () => {
