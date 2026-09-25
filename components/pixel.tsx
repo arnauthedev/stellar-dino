@@ -1,61 +1,223 @@
-// Pixel sprites copied from dino-game/src/game.js (drawDino, drawCactus, drawSky).
-// Drawn as SVG rects so they scale crisply. Do not import from dino-game/.
+// Pixel sprites in the Chrome Dino style, drawn as SVG rects so they scale crisply.
+// Each sprite is a bitmap: "#" = ink, "o" = hole in background colour, "." = empty.
+// Do not import from dino-game/.
 
-type SpriteProps = { className?: string; color?: string; title?: string };
+type Bitmap = string[];
 
-/** The game's dino. viewBox origin matches drawDino(x=0, y=0). */
+function PixelArt({
+  bitmap,
+  color,
+  hole = "var(--color-bg)",
+  className,
+  label,
+}: {
+  bitmap: Bitmap;
+  color: string;
+  hole?: string;
+  className?: string;
+  label?: string;
+}) {
+  const width = Math.max(...bitmap.map((row) => row.length));
+  const ink: React.ReactNode[] = [];
+  const holes: React.ReactNode[] = [];
+  bitmap.forEach((row, y) => {
+    // merge horizontal runs into one rect each
+    let x = 0;
+    while (x < row.length) {
+      const ch = row[x];
+      let end = x;
+      while (end < row.length && row[end] === ch) end++;
+      if (ch === "#") ink.push(<rect key={`${x}-${y}`} x={x} y={y} width={end - x} height={1} />);
+      if (ch === "o") holes.push(<rect key={`${x}-${y}`} x={x} y={y} width={end - x} height={1} />);
+      x = end;
+    }
+  });
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${bitmap.length}`}
+      className={`pixelated ${className ?? ""}`}
+      role={label ? "img" : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : true}
+    >
+      <g fill={color}>{ink}</g>
+      {holes.length > 0 && <g fill={hole}>{holes}</g>}
+    </svg>
+  );
+}
+
+/* ---------- Dino (classic T-Rex, 20 x 21) ---------- */
+
+const DINO_HEAD: Bitmap = [
+  "...........########.",
+  "..........##o#######",
+  "..........##########",
+  "..........##########",
+  "..........##########",
+  "..........#####.....",
+  "..........########..",
+];
+const DINO_HEAD_BLINK: Bitmap = DINO_HEAD.map((row, i) => (i === 1 ? row.replace("o", "#") : row));
+
+const DINO_BODY: Bitmap = [
+  "#........#####......",
+  "#.......######......",
+  "##....##########....",
+  "###..#########.#....",
+  "##############......",
+  "##############......",
+  ".############.......",
+  "..###########.......",
+  "...#########........",
+  "....#######.........",
+];
+
+const DINO_LEGS = {
+  stand: [
+    ".....###.##.........",
+    ".....##...#.........",
+    ".....#....#.........",
+    ".....##...##........",
+  ],
+  // back leg lifted
+  walkA: [
+    ".....###.##.........",
+    ".....###..#.........",
+    "..........#.........",
+    "..........##........",
+  ],
+  // front leg lifted
+  walkB: [
+    ".....###.##.........",
+    ".....##...##........",
+    ".....#..............",
+    ".....##.............",
+  ],
+} satisfies Record<string, Bitmap>;
+
+export type DinoPose = keyof typeof DINO_LEGS;
+
 export function DinoSprite({
   className,
   color = "var(--color-dino)",
-  title = "Dino",
-  eyeClosed = false,
-  legFrame = 0,
-}: SpriteProps & { eyeClosed?: boolean; legFrame?: 0 | 1 | 2 }) {
-  // legFrame 0 = both legs, 1/2 = alternate leg lifted (walk cycle)
-  const backLeg = legFrame === 1 ? 33 : 36;
-  const frontLeg = legFrame === 2 ? 33 : 36;
-  return (
-    <svg viewBox="0 0 52 43" className={`pixelated ${className ?? ""}`} role="img" aria-label={title}>
-      <g fill={color}>
-        <rect x="19" y="0" width="28" height="21" />
-        <rect x="39" y="8" width="12" height="7" />
-        <rect x="8" y="18" width="31" height="19" />
-        <rect x="1" y="25" width="15" height="8" />
-        <rect x="16" y={backLeg} width="7" height="7" />
-        <rect x="32" y={frontLeg} width="7" height="7" />
-      </g>
-      <rect x="36" y={eyeClosed ? 8 : 6} width="4" height={eyeClosed ? 1 : 4} fill="var(--color-bg)" />
-    </svg>
-  );
+  pose = "stand",
+  blink = false,
+  label = "Dino",
+}: {
+  className?: string;
+  color?: string;
+  pose?: DinoPose;
+  blink?: boolean;
+  label?: string;
+}) {
+  const bitmap = [...(blink ? DINO_HEAD_BLINK : DINO_HEAD), ...DINO_BODY, ...DINO_LEGS[pose]];
+  return <PixelArt bitmap={bitmap} color={color} className={className} label={label} />;
 }
 
-export function CactusSprite({ className, color = "var(--color-cactus)", tall = false }: SpriteProps & { tall?: boolean }) {
-  const h = tall ? 47 : 37;
-  return (
-    <svg viewBox={`0 0 25 ${h}`} className={`pixelated ${className ?? ""}`} aria-hidden="true">
-      <g fill={color}>
-        <rect x="8" y="0" width="10" height={h} />
-        <rect x="0" y="14" width="8" height="8" />
-        <rect x="0" y="14" width="5" height="19" />
-        <rect x="18" y="8" width="7" height="8" />
-        <rect x="21" y="8" width="4" height="19" />
-      </g>
-    </svg>
-  );
+/* ---------- Cactus (13 x 19) ---------- */
+
+const CACTUS: Bitmap = [
+  ".....###.....",
+  "....#####....",
+  "....#####....",
+  "....#####.##.",
+  ".##.#####.###",
+  "###.#####.###",
+  "###.#####.###",
+  "###.#####.###",
+  "###.#####.###",
+  "###.########.",
+  "###.#######..",
+  "###.#####....",
+  ".########....",
+  "..#######....",
+  "....#####....",
+  "....#####....",
+  "....#####....",
+  "....#####....",
+  "....#####....",
+];
+
+export function CactusSprite({ className, color = "var(--color-cactus)" }: { className?: string; color?: string }) {
+  return <PixelArt bitmap={CACTUS} color={color} className={className} />;
 }
 
-export function CloudSprite({ className, color = "var(--color-cloud)" }: SpriteProps) {
-  return (
-    <svg viewBox="0 0 42 14" className={`pixelated ${className ?? ""}`} aria-hidden="true">
-      <g fill={color}>
-        <rect x="0" y="7" width="42" height="7" />
-        <rect x="9" y="0" width="25" height="7" />
-      </g>
-    </svg>
-  );
+/* ---------- Pterodactyl (23 x 18, two wing frames) ---------- */
+
+const BIRD_BODY: Bitmap = [
+  "....##.................",
+  "...#o#.................",
+  "..####.................",
+  "#####################..",
+  ".....##################",
+  "......###############..",
+];
+
+const BIRD_UP: Bitmap = [
+  "........#..............",
+  "........##.............",
+  "........###............",
+  "........####...........",
+  "........#####..........",
+  "........######.........",
+  "....##..#######........",
+  "...#o#..########.......",
+  "..####..#########......",
+  ...BIRD_BODY.slice(3),
+  "........#########......",
+  "......................",
+  "......................",
+  "......................",
+  "......................",
+  "......................",
+];
+
+const BIRD_DOWN: Bitmap = [
+  ".......................",
+  ".......................",
+  ".......................",
+  ".......................",
+  ".......................",
+  ".......................",
+  ...BIRD_BODY,
+  "........#########......",
+  "........######.........",
+  "........#####..........",
+  "........####...........",
+  "........###............",
+  "........##.............",
+];
+
+export function BirdSprite({
+  className,
+  color = "var(--color-cactus)",
+  wings = "up",
+}: {
+  className?: string;
+  color?: string;
+  wings?: "up" | "down";
+}) {
+  return <PixelArt bitmap={wings === "up" ? BIRD_UP : BIRD_DOWN} color={color} className={className} />;
 }
 
-/** The game's dashed ground line. */
+/* ---------- Cloud (23 x 7, outlined) ---------- */
+
+const CLOUD: Bitmap = [
+  "..........######.......",
+  "........###....##......",
+  "......###.......###....",
+  "..#####...........##...",
+  ".##................###.",
+  "##...................##",
+  "#######################",
+];
+
+export function CloudSprite({ className, color = "var(--color-ground)" }: { className?: string; color?: string }) {
+  return <PixelArt bitmap={CLOUD} color={color} className={className} />;
+}
+
+/* ---------- Ground (the game's line + dashes) ---------- */
+
 export function Ground({ className }: { className?: string }) {
   return (
     <div className={className} aria-hidden="true">

@@ -1,4 +1,12 @@
-import { CactusSprite, CloudSprite, DinoSprite, Ground } from "@/components/pixel";
+import { DayCalendar, type CalendarEvent } from "@/components/day-calendar";
+import { BirdSprite, CactusSprite, CloudSprite, DinoSprite, Ground } from "@/components/pixel";
+
+const demoEvents: CalendarEvent[] = [
+  { id: "f", title: "Flight LIS → CDG", start: "10:00", end: "12:35", detail: "TP432", tone: "flight" },
+  { id: "t", title: "Taxi to museum", start: "12:35", end: "13:20", tone: "neutral" },
+  { id: "m", title: "Louvre entry", start: "13:45", end: "15:45", detail: "slot 13:45", tone: "museum" },
+  { id: "s", title: "Airport shop", start: "09:20", end: "09:40", tone: "shop" },
+];
 
 const swatches: [string, string][] = [
   ["bg", "#fafbfc"],
@@ -33,7 +41,7 @@ export default function ThemePage() {
   return (
     <main className="mx-auto w-full max-w-5xl space-y-12 px-4 py-10 sm:px-8">
       <header className="flex items-end gap-5">
-        <DinoSprite className="h-14 w-auto" />
+        <DinoSprite className="h-16 w-auto" />
         <div>
           <h1 className="title text-3xl">Stellar Dino theme</h1>
           <p className="text-sm text-subtle">Extracted from Motion Dino v2. Light, flat, pill controls, pixel sprites.</p>
@@ -57,6 +65,42 @@ export default function ThemePage() {
             <DinoSprite key={c} color={c} className="h-8 w-auto" />
           ))}
           <span className="text-xs text-subtle">player colours (game lanes)</span>
+        </div>
+      </Section>
+
+      <Section title="Sprites">
+        <div className="pane-soft pane-rounded flex flex-wrap items-end gap-10 px-8 py-6">
+          <figure className="flex flex-col items-center gap-2"><DinoSprite className="h-20 w-auto" /><figcaption className="text-xs text-subtle">stand</figcaption></figure>
+          <figure className="flex flex-col items-center gap-2"><DinoSprite pose="walkA" className="h-20 w-auto" /><figcaption className="text-xs text-subtle">walk A</figcaption></figure>
+          <figure className="flex flex-col items-center gap-2"><DinoSprite pose="walkB" className="h-20 w-auto" /><figcaption className="text-xs text-subtle">walk B</figcaption></figure>
+          <figure className="flex flex-col items-center gap-2"><DinoSprite blink className="h-20 w-auto" /><figcaption className="text-xs text-subtle">blink</figcaption></figure>
+          <figure className="flex flex-col items-center gap-2"><CactusSprite className="h-16 w-auto" /><figcaption className="text-xs text-subtle">cactus</figcaption></figure>
+          <figure className="flex flex-col items-center gap-2"><BirdSprite className="h-12 w-auto" /><figcaption className="text-xs text-subtle">bird up</figcaption></figure>
+          <figure className="flex flex-col items-center gap-2"><BirdSprite wings="down" className="h-12 w-auto" /><figcaption className="text-xs text-subtle">bird down</figcaption></figure>
+          <figure className="flex flex-col items-center gap-2"><CloudSprite className="h-6 w-auto" /><figcaption className="text-xs text-subtle">cloud</figcaption></figure>
+        </div>
+      </Section>
+
+      <Section title="Panes (no border, shade only)">
+        <div className="grid h-56 grid-cols-2 overflow-hidden rounded-card border border-line">
+          <div className="pane relative">
+            <div className="absolute top-5 left-6 flex gap-8">
+              <div className="flex flex-col gap-1"><span className="label">Score</span><strong className="num text-2xl font-medium">00412</strong></div>
+              <div className="flex flex-col gap-1"><span className="label">Best</span><strong className="num text-2xl font-medium text-faint">01280</strong></div>
+            </div>
+            <CloudSprite className="absolute top-20 right-16 h-4 w-auto" />
+            <BirdSprite className="absolute top-24 right-40 h-6 w-auto" />
+            <div className="absolute inset-x-0 bottom-8 px-4">
+              <div className="flex items-end justify-between px-8"><DinoSprite pose="walkA" className="h-12 w-auto" /><CactusSprite className="h-10 w-auto" /></div>
+              <Ground className="mt-0.5" />
+            </div>
+          </div>
+          <div className="pane-well flex items-center justify-center text-sm text-subtle">.pane-well (camera panel)</div>
+        </div>
+        <div className="flex gap-3 text-sm">
+          <div className="pane-well pane-rounded flex-1 p-5">.pane-well .pane-rounded</div>
+          <div className="pane-soft pane-rounded flex-1 p-5">.pane-soft .pane-rounded</div>
+          <div className="pane-soft flex-1 p-5">.pane-soft (square)</div>
         </div>
       </Section>
 
@@ -120,28 +164,19 @@ export default function ThemePage() {
       </Section>
 
       <Section title="Agent page layout (static mock)">
-        <div className="grid h-[420px] grid-cols-[minmax(280px,25%)_1fr] gap-3">
-          <div className="grid grid-rows-[2fr_1fr] gap-3">
-            <div className="panel relative p-4">
-              <span className="label">Calendar</span>
-              <div className="mt-3 space-y-2 text-sm">
-                <div className="rounded-ctl bg-accent-soft px-3 py-2 text-accent-ink">10:00 Flight LIS → PAR</div>
-                <div className="rounded-ctl bg-good-soft px-3 py-2 text-good">15:30 Museum entry</div>
-              </div>
-              <button className="icon-btn absolute right-3 bottom-3" aria-label="Expand calendar">
+        <div className="grid h-[560px] grid-cols-[minmax(280px,25%)_1fr] gap-3">
+          <div className="grid min-h-0 grid-rows-[minmax(0,2fr)_minmax(0,1fr)] gap-3">
+            <div className="panel relative flex min-h-0 flex-col p-4">
+              <DayCalendar title="Today" events={demoEvents} hourHeight={34} className="min-h-0 flex-1" />
+              <button className="icon-btn absolute top-2.5 right-2.5" aria-label="Expand calendar">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
                 </svg>
               </button>
             </div>
-            <div className="panel relative overflow-hidden">
-              <CloudSprite className="absolute top-5 left-8 h-3 w-auto" />
-              <CloudSprite className="absolute top-9 right-10 h-3 w-auto" />
-              <div className="absolute inset-x-0 bottom-6 px-3">
-                <div className="flex items-end justify-between px-6">
-                  <DinoSprite className="h-11 w-auto" />
-                  <CactusSprite className="h-9 w-auto" />
-                </div>
+            <div className="pane-soft pane-rounded relative">
+              <div className="absolute inset-x-0 bottom-5 px-4">
+                <div className="px-10"><DinoSprite className="h-20 w-auto" /></div>
                 <Ground className="mt-0.5" />
               </div>
             </div>
@@ -153,7 +188,7 @@ export default function ThemePage() {
                 Book me a flight to Paris and a museum visit.
               </p>
               <p className="w-fit max-w-[75%] rounded-[18px] bg-muted px-4 py-2.5">
-                Done. Flight at 10:00, museum at 15:30 (arrival + 45 min + buffer).
+                Done. Flight lands 12:35, taxi 45 min, so the Louvre is at 13:45.
               </p>
             </div>
             <div className="flex gap-2">

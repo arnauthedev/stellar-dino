@@ -197,6 +197,20 @@ button:disabled {
     border: 1px solid var(--color-line);
     border-radius: var(--radius-card);
   }
+  /* Borderless panes: just a shade of background, like the game's two panels */
+  .pane {
+    background: var(--color-bg);
+  }
+  .pane-well {
+    background: var(--color-well);
+  }
+  .pane-soft {
+    background: #f3f5f8;
+  }
+  .pane-rounded {
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
   .card {
     background: var(--color-surface);
     border-radius: var(--radius-card);
